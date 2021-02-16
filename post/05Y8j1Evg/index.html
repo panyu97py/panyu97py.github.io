@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>两数之和 | LuYu&#39;s Blog</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://panyu97py.github.io/favicon.ico?v=1613508599483">
+<link rel="stylesheet" href="https://panyu97py.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="题目描述
+给定一个整数数组 nums 和一个目标值 target，请你在该数组中找出和为目标值的那 两个 整数，并返回他们的数组下标。
+你可以假设每种输入只会对应一个答案。但是，数组中同一个元素不能使用两遍。
+示例
+给定 nums = [2..." />
+    <meta name="keywords" content="leetcode算法" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://panyu97py.github.io">
+        <img src="https://panyu97py.github.io/images/avatar.png?v=1613508599483" class="site-logo">
+        <h1 class="site-title">LuYu&#39;s Blog</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+          <a class="social-link" href="https://github.com/panyu97py" target="_blank">
+            <i class="fab fa-github"></i>
+          </a>
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      共同学习，共同进步
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://panyu97py.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">两数之和</h2>
+            <div class="post-date">2021-02-17</div>
+            
+            <div class="post-content" v-pre>
+              <h3 id="题目描述">题目描述</h3>
+<p>给定一个整数数组 <code>nums</code> 和一个目标值 <code>target</code>，请你在该数组中找出和为目标值的那 两个 整数，并返回他们的数组下标。</p>
+<p>你可以假设每种输入只会对应一个答案。但是，数组中同一个元素不能使用两遍。</p>
+<h4 id="示例">示例</h4>
+<pre><code>给定 nums = [2, 7, 11, 15], target = 9
+
+因为 nums[0] + nums[1] = 2 + 7 = 9
+所以返回 [0, 1]
+</code></pre>
+<h3 id="题解">题解</h3>
+<h4 id="方法一暴力解法">方法一：暴力解法</h4>
+<h5 id="思路">思路：</h5>
+<p>看到题目后最先想到的就是两个循环嵌套，遍历每个元素<code>x</code>，并查找是否存在一个目标元素与<code>x</code>相加等于<code>target</code></p>
+<blockquote>
+<p>时间复杂度：O(n^2)<br>
+空间复杂度：O(1)</p>
+</blockquote>
+<pre><code>var twoSum = function(nums, target) {
+for (let i = 0; i &lt; nums.length; i++) {
+        for (let j = i + 1; j &lt; nums.length; j++) {
+            if (nums[i] + nums[j]= target) {
+                return [i, j];
+            }
+        }
+    }
+};
+</code></pre>
+<h4 id="方法二两遍哈希表">方法二：两遍哈希表</h4>
+<h5 id="思路-2">思路：</h5>
+<p>为了对运行时间复杂度进行优化，我们可以使用哈希表。一个简单的实现使用了两次迭代。在第一次迭代中，我们将每个元素的值和它的索引添加到表中。然后，在第二次迭代中，我们将检查每个元素所对应的目标元素 <code>target - nums[i]</code> 是否存在于表中。注意，该目标元素不能是 <code>nums[i]</code> 本身！</p>
+<blockquote>
+<p>时间复杂度：O(n)<br>
+空间复杂度：O(n)</p>
+</blockquote>
+<pre><code>var twoSum = function(nums, target) {
+    // 构造哈希表
+    var map = new Map();
+    for (let i = 0; i &lt; nums.length; i++) {
+        //将数据作为map的key，数据的位置作为map的值（由于题目中提到每种输入只会对应一个答案，即数组中不存在重复的元素）
+        map.set(nums[i], i);
+    }
+    for (let j = 0; j &lt; nums.length; j++) {
+        let complement = target - nums[j];
+        if (map.has(complement) &amp;&amp; map.get(complement) !== j) {
+            return [j, map.get(complement)];
+        }
+    }
+    console.log(&quot;No two sum solution&quot;);
+};
+
+</code></pre>
+<h4 id="方法三一遍哈希表">方法三：一遍哈希表</h4>
+<h5 id="思路-3">思路：</h5>
+<p>其实我们可以通过一遍哈希表完成查找，在进行迭代并将元素插入到表中的同时，我们还会回过头来检查表中是否已经存在当前元素所对应的目标元素。如果它存在，那我们已经找到了对应解，并立即将其返回。</p>
+<blockquote>
+<p>时间复杂度：O(n)<br>
+空间复杂度：O(n)</p>
+</blockquote>
+<pre><code>var twoSum = function(nums, target) {
+    let targetMap = new Map()
+    for(let i = 0;i&lt;nums.length;i++){
+        let a = target - nums[i]
+        if(targetMap.has(a)){
+            return [targetMap.get(a),i]
+        }
+        targetMap.set(nums[i],i)
+    }
+};
+</code></pre>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://panyu97py.github.io/tag/QdA6dffbV/" class="tag">
+                    leetcode算法
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://panyu97py.github.io/post/SVgfv_u3l/">
+                  <h3 class="post-title">
+                    无重复字符的最长字串
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

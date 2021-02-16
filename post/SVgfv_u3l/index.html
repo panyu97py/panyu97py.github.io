@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>无重复字符的最长字串 | LuYu&#39;s Blog</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://panyu97py.github.io/favicon.ico?v=1613508599483">
+<link rel="stylesheet" href="https://panyu97py.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="题目描述
+给定一个字符串，请你找出其中不含有重复字符的 最长子串 的长度。
+示例1
+输入: &quot;abcabcbb&quot;
+输出: 3 
+解释: 因为无重复字符的最长子串是 &quot;abc&quot;，所以其长度为 3。
+
+示..." />
+    <meta name="keywords" content="leetcode算法" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://panyu97py.github.io">
+        <img src="https://panyu97py.github.io/images/avatar.png?v=1613508599483" class="site-logo">
+        <h1 class="site-title">LuYu&#39;s Blog</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+          <a class="social-link" href="https://github.com/panyu97py" target="_blank">
+            <i class="fab fa-github"></i>
+          </a>
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      共同学习，共同进步
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://panyu97py.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">无重复字符的最长字串</h2>
+            <div class="post-date">2021-02-17</div>
+            
+            <div class="post-content" v-pre>
+              <h3 id="题目描述">题目描述</h3>
+<p>给定一个字符串，请你找出其中不含有重复字符的 最长子串 的长度。</p>
+<h4 id="示例1">示例1</h4>
+<pre><code>输入: &quot;abcabcbb&quot;
+输出: 3 
+解释: 因为无重复字符的最长子串是 &quot;abc&quot;，所以其长度为 3。
+</code></pre>
+<h4 id="示例2">示例2</h4>
+<pre><code>输入: &quot;bbbbb&quot;
+输出: 1
+解释: 因为无重复字符的最长子串是 &quot;b&quot;，所以其长度为 1。
+</code></pre>
+<h4 id="示例-3">示例 3</h4>
+<pre><code>输入: &quot;pwwkew&quot;
+输出: 3
+解释: 因为无重复字符的最长子串是 &quot;wke&quot;，所以其长度为 3。
+     请注意，你的答案必须是 子串 的长度，&quot;pwke&quot; 是一个子序列，不是子串。
+</code></pre>
+<h3 id="题解">题解</h3>
+<h4 id="官方题解">官方题解</h4>
+<h5 id="思路">思路</h5>
+<p><img src="https://panyu97py.github.io/post-images/1613493014542.png" alt="" loading="lazy"><br>
+如上图所示相当于左右两个指针对字符串各循环了一次</p>
+<h5 id="代码">代码</h5>
+<pre><code>var lengthOfLongestSubstring = function(s) {
+    // 哈希集合，记录每个字符是否出现过
+    const occ = new Set();
+    const n = s.length;
+    // 右指针，初始值为 -1，相当于我们在字符串的左边界的左侧，还没有开始移动
+    let rk = -1, ans = 0;
+    for (let i = 0; i &lt; n; ++i) {
+        if (i != 0) {
+            // 左指针向右移动一格，移除一个字符
+            occ.delete(s.charAt(i - 1));
+        }
+        while (rk + 1 &lt; n &amp;&amp; !occ.has(s.charAt(rk + 1))) {
+            // 不断地移动右指针
+            occ.add(s.charAt(rk + 1));
+            ++rk;
+        }
+        // 第 i 到 rk 个字符是一个极长的无重复字符子串
+        ans = Math.max(ans, rk - i + 1);
+    }
+    return ans;
+};
+</code></pre>
+<h4 id="我的题解">我的题解</h4>
+<h5 id="思路-2">思路</h5>
+<p>获取字符串长度，并循环。每次循环判断map中是否存在key为该字符的值若不存在，将字符作为key，字符所在的位置作为value存入map中，若存在，则获取key为该字符的值将该值与当前的start做比较取较大的值作为start。每次循环计算长度（end-start+1）并与已存在的长度比较取较大的值。</p>
+<figure data-type="image" tabindex="1"><img src="https://panyu97py.github.io/post-images/1613493060500.png" alt="" loading="lazy"></figure>
+<h5 id="代码-2">代码</h5>
+<pre><code>/**
+ * @param {string} s
+ * @return {number}
+ */
+var lengthOfLongestSubstring = function (s) {
+    let tempMap = new Map()
+    let start = 0
+    let length = 0
+    if(!s){
+      return 0
+    }
+    let len = s.length
+    for(let end = 0;end&lt;len;end++){
+      if(tempMap.has(s.charAt(end))){
+        start =Math.max(start,tempMap.get(s.charAt(end))+1) 
+      }
+      tempMap.set(s.charAt(end),end)
+      length = Math.max(length,end-start+1)
+    }
+    return length
+};
+</code></pre>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://panyu97py.github.io/tag/QdA6dffbV/" class="tag">
+                    leetcode算法
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://panyu97py.github.io/post/AcFQPeaQV/">
+                  <h3 class="post-title">
+                    两数相加
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

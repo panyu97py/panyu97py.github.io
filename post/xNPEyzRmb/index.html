@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>vue -- 事件总线 EventBus | LuYu&#39;s Blog</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://panyu97py.github.io/favicon.ico?v=1613508599483">
+<link rel="stylesheet" href="https://panyu97py.github.io/styles/main.css">
+
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="本文转自segmentfault
+本文仅记录存在这种事件传递的方式，但不推崇。
+EventBus又称为事件总线。在Vue中可以使用 EventBus 来作为组件传递数据的桥梁的，就像是所有组件共用相同的事件中心，可以向该中心注册发送事件或接..." />
+    <meta name="keywords" content="vue" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://panyu97py.github.io">
+        <img src="https://panyu97py.github.io/images/avatar.png?v=1613508599483" class="site-logo">
+        <h1 class="site-title">LuYu&#39;s Blog</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+          <a class="social-link" href="https://github.com/panyu97py" target="_blank">
+            <i class="fab fa-github"></i>
+          </a>
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      共同学习，共同进步
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://panyu97py.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">vue -- 事件总线 EventBus</h2>
+            <div class="post-date">2021-02-17</div>
+            
+            <div class="post-content" v-pre>
+              <p>本文转自<a href="https://segmentfault.com/a/1190000021707081">segmentfault</a></p>
+<p>本文仅记录存在这种事件传递的方式，但不推崇。</p>
+<p><code>EventBus</code>又称为事件总线。在<code>Vue</code>中可以使用 <code>EventBus</code> 来作为组件传递数据的桥梁的，就像是所有组件共用相同的事件中心，可以向该中心注册发送事件或接收事件，所以组件都可以上下平行地通知其他组件，但也就是太方便所以若使用不慎，就会造成难以维护的灾难，因此才需要更完善的<code>Vuex</code>作为状态管理中心，将通知的概念上升到共享状态层次。</p>
+<blockquote>
+<p>官方推荐的状态管理方案是 <code>Vuex</code>。不过如果项目不是很大，状态管理也没有很复杂的话，使用 Vuex 没必要。</p>
+</blockquote>
+<h2 id="使用-eventbus">使用 EventBus</h2>
+<blockquote>
+<p>你需要做的只是引入 <code>Vue</code> 并导出它的一个实例（在这种情况下，我称它为 <code>EventBus</code> ）。实质上它是一个不具备 <code>DOM</code> 的组件，它具有的仅仅只是它实例方法而已，因此它非常的轻便。</p>
+</blockquote>
+<h3 id="初始化">初始化</h3>
+<ul>
+<li>第一种方式: 可以在 <code>main.js</code>中，初始化 <code>EventBus</code></li>
+</ul>
+<pre><code>Vue.prototype.$EventBus = new Vue()
+</code></pre>
+<ul>
+<li>第二种方式: 创建一个 <code>Bus.js</code>,再创建事件总线并将其导出，以便其它模块可以使用或者监听它</li>
+</ul>
+<pre><code>// Bus.js
+import Vue from 'vue'
+export const EventBus = new Vue();
+</code></pre>
+<p>现在我们已经创建了 <code>EventBus</code> ，接下来你需要做到的就是在你的组件中加载它，并且调用同一个方法，就如你在父子组件中互相传递消息一样。</p>
+<h3 id="发送和接受事件">发送和接受事件</h3>
+<p>其实和 父子组件的通信差不多,用 <code>EventBus.$emit('eventName',data)</code>发送， <code>EventBus.$on(&quot;eventName&quot;, callback(payload1,…))</code> 接受</p>
+<p>现在假设 A 组件与 B 组件通信</p>
+<pre><code>&lt;!-- A.vue --&gt;
+&lt;template&gt;
+    &lt;p&gt;{{msgB}}&lt;/p&gt;
+    &lt;button @click=&quot;sendMsgA()&quot;&gt;-&lt;/button&gt;
+&lt;/template&gt;
+
+&lt;script&gt; 
+import { EventBus } from &quot;../Bus.js&quot;;
+export default {
+    data(){
+        return {
+        msg: ''
+        }
+    },
+    mounted() {
+        EventBus.$on(&quot;bMsg&quot;, (msg) =&gt; {
+            // a组件接受 b发送来的消息
+            this.msg = msg;
+        });
+    },
+    methods: {
+        sendMsgA() {
+            EventBus.$emit(&quot;aMsg&quot;, '来自A页面的消息'); // a 发送数据
+        }
+    }
+}; 
+&lt;/script&gt;
+
+
+&lt;!-- B.vue --&gt;
+&lt;template&gt;
+  &lt;p&gt;{{msgA}}&lt;/p&gt;
+    &lt;button @click=&quot;sendMsgB()&quot;&gt;-&lt;/button&gt;
+&lt;/template&gt;
+
+&lt;script&gt; 
+import { EventBus } from &quot;../event-bus.js&quot;;
+export default {
+    data(){
+        return {
+        msg: ''
+        }
+    },
+    mounted() {
+        EventBus.$on(&quot;aMsg&quot;, (msg) =&gt; {
+            // b组件接受 a发送来的消息
+            this.msg = msg;
+        });
+    },
+    methods: {
+        sendMsgB() {
+            EventBus.$emit(&quot;bMsg&quot;, '来自b页面的消息'); // b发送数据
+        }
+    }
+};
+&lt;/script&gt;
+</code></pre>
+<p>如果只监听(接受)一次数据可以使用 <code>EventBus.$once('eventName', callback(payload1,…)</code></p>
+<h3 id="移除移除事件监听者">移除移除事件监听者</h3>
+<ul>
+<li>移除单个事件监听 <code>EventBus.$off('eventName', callback)</code></li>
+<li>移除全部事件监听 <code>EventBus.$off()</code></li>
+</ul>
+<pre><code>// 导入我们刚刚创建的 EventBus
+import { EventBus } from '../Bus.js'
+
+// 事件监听函数
+const clickHandler = function(clickCount) {
+  console.log(`Oh, hello)`)
+}
+
+// 开始监听事件
+EventBus.$on('i-got-clicked', clickHandler);
+
+// 停止监听
+EventBus.$off('i-got-clicked', clickHandler);
+
+</code></pre>
+<h2 id="全局eventbus">全局<code>EventBus</code></h2>
+<p>全局<code>EventBus</code>，虽然在某些示例中不提倡使用，但它是一种非常漂亮且简单的方法，可以跨组件之间共享数据。</p>
+<p>它的工作原理是发布/订阅方法，通常称为 <code>Pub</code>/<code>Sub</code> 。</p>
+<p>由于是全局的，必然所有事件都订阅它, 所有组件也发布到它，订阅组件获得更新。也就是说所有组件都能够将事件发布到总线，然后总线由另一个组件订阅，然后订阅它的组件将得到更新。</p>
+<h3 id="创建全局eventbus">创建全局<code>EventBus</code></h3>
+<p>全局事件总线只不过是一个简单的<code>vue</code> 组件。</p>
+<pre><code>var EventBus = new Vue();
+
+Object.defineProperties(Vue.prototype, {
+  $bus: {
+    get: function () {
+      return EventBus
+    }
+  }
+})
+// 这个初始化的第一种方法，个人感觉区别不大
+</code></pre>
+<h3 id="使用-on和emit">使用 <code>$on</code>和<code>$emit</code></h3>
+<p>在这个特定的总线中使用两个方法。一个用于创建发出的事件，它就是<code>$emit</code>；另一个用于订阅<code>$emit</code>,并接收参数执行回调，它就是<code>$on</code>：</p>
+<pre><code>this.$bus.$emit('nameOfEvent',{ ... pass some event data ...});
+
+this.$bus.$on('nameOfEvent',($event) =&gt; {
+    // ...
+})
+</code></pre>
+<h2 id="eventbus的优缺点">EventBus的优缺点</h2>
+<h3 id="缺点">缺点</h3>
+<ul>
+<li>大家都知道vue是单页应用，如果你在某一个页面刷新了之后，与之相关的EventBus会被移除，这样就导致业务走不下去。</li>
+<li>如果业务有反复操作的页面，EventBus在监听的时候就会触发很多次，也是一个非常大的隐患。这时候我们就需要好好处理EventBus在项目中的关系。通常会用到，在vue页面销毁时，同时移除EventBus事件监听。</li>
+<li>由于是都使用一个Vue实例，所以容易出现重复触发的情景，两个页面都定义了同一个事件名，并且没有用$off销毁（常出现在路由切换时）。</li>
+</ul>
+<h3 id="优点">优点</h3>
+<ul>
+<li>解决了多层组件之间繁琐的事件传播。</li>
+<li>使用原理十分简单，代码量少。</li>
+</ul>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://panyu97py.github.io/tag/vue/" class="tag">
+                    vue
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://panyu97py.github.io/post/VnrVXCKIi/">
+                  <h3 class="post-title">
+                    ios css border-radius元素 overflow:hidden失效问题
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+  <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad()
+  </script>
+
+
+
+
+
+  </body>
+</html>

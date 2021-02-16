@@ -1,0 +1,2800 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://panyu97py.github.io</id>
+    <title>LuYu&apos;s Blog</title>
+    <updated>2021-02-16T20:50:02.097Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <link rel="alternate" href="https://panyu97py.github.io"/>
+    <link rel="self" href="https://panyu97py.github.io/atom.xml"/>
+    <subtitle>共同学习，共同进步</subtitle>
+    <logo>https://panyu97py.github.io/images/avatar.png</logo>
+    <icon>https://panyu97py.github.io/favicon.ico</icon>
+    <rights>All rights reserved 2021, LuYu&apos;s Blog</rights>
+    <entry>
+        <title type="html"><![CDATA[可视化拖拽组件库一些技术要点原理分析（三）]]></title>
+        <id>https://panyu97py.github.io/post/-lcqVVhek/</id>
+        <link href="https://panyu97py.github.io/post/-lcqVVhek/">
+        </link>
+        <updated>2021-02-16T19:49:47.000Z</updated>
+        <content type="html"><![CDATA[<p>本文摘自<a href="https://juejin.cn/post/6929302655118344200">掘金</a>,写的很好抄录一下。建议多去给原作者点赞👍</p>
+<p>本文是可视化拖拽系列的第三篇，之前的两篇文章一共对 17 个功能点的技术原理进行了分析：</p>
+<ol>
+<li>编辑器</li>
+<li>自定义组件</li>
+<li>拖拽</li>
+<li>删除组件、调整图层层级</li>
+<li>放大缩小</li>
+<li>撤消、重做</li>
+<li>组件属性设置</li>
+<li>吸附</li>
+<li>预览、保存代码</li>
+<li>绑定事件</li>
+<li>绑定动画</li>
+<li>导入 PSD</li>
+<li>手机模式</li>
+<li>拖拽旋转</li>
+<li>复制粘贴剪切</li>
+<li>数据交互</li>
+<li>发布</li>
+</ol>
+<p>本文在此基础上，将对以下几个功能点的技术原理进行分析：</p>
+<ol start="18">
+<li>多个组件的组合和拆分</li>
+<li>文本组件</li>
+<li>矩形组件</li>
+<li>锁定组件</li>
+<li>快捷键</li>
+<li>网格线</li>
+<li>编辑器快照的另一种实现方式</li>
+</ol>
+<p>虽然我这个可视化拖拽组件库只是一个 DEMO，但对比了一下市面上的一些现成产品（例如 <a href="https://www.processon.com/">processon</a>、<a href="https://modao.cc/">墨刀</a>），就基础功能来说，我这个 DEMO 实现了绝大部分的功能。<br>
+如果你对于低代码平台有兴趣，但又不了解的话。强烈建议将我的三篇文章结合项目源码一起阅读，相信对你的收获绝对不小。另附上项目、在线 DEMO 地址：</p>
+<p><a href="https://github.com/woai3c/visual-drag-demo">github 项目地址</a></p>
+<p><a href="https://woai3c.github.io/visual-drag-demo/#/">在线预览</a></p>
+<h3 id="18-多个组件的组合和拆分">18. 多个组件的组合和拆分</h3>
+<p>组合和拆分的技术点相对来说比较多，共有以下 4 个：</p>
+<ul>
+<li>选中区域</li>
+<li>组合后的移动、旋转</li>
+<li>组合后的放大缩小</li>
+<li>拆分后子组件样式的恢复</li>
+</ul>
+<h4 id="选中区域">选中区域</h4>
+<p>在将多个组件组合之前，需要先选中它们。利用鼠标事件可以很方便的将选中区域展示出来：</p>
+<figure data-type="image" tabindex="1"><img src="https://panyu97py.github.io/post-images/1613505365488.gif" alt="" loading="lazy"></figure>
+<ol>
+<li><code>mousedown</code> 记录起点坐标</li>
+<li><code>mousemove</code> 将当前坐标和起点坐标进行计算得出移动区域</li>
+<li>如果按下鼠标后往左上方移动，类似于这种操作则需要将当前坐标设为起点坐标，再计算出移动区域</li>
+</ol>
+<pre><code class="language-js">// 获取编辑器的位移信息
+const rectInfo = this.editor.getBoundingClientRect()
+this.editorX = rectInfo.x
+this.editorY = rectInfo.y
+
+const startX = e.clientX
+const startY = e.clientY
+this.start.x = startX - this.editorX
+this.start.y = startY - this.editorY
+// 展示选中区域
+this.isShowArea = true
+
+const move = (moveEvent) =&gt; {
+    this.width = Math.abs(moveEvent.clientX - startX)
+    this.height = Math.abs(moveEvent.clientY - startY)
+    if (moveEvent.clientX &lt; startX) {
+        this.start.x = moveEvent.clientX - this.editorX
+    }
+
+    if (moveEvent.clientY &lt; startY) {
+        this.start.y = moveEvent.clientY - this.editorY
+    }
+}
+</code></pre>
+<p>在 mouseup 事件触发时，需要对选中区域内的所有组件的位移大小信息进行计算，得出一个能包含区域内所有组件的最小区域。这个效果如下图所示：</p>
+<figure data-type="image" tabindex="2"><img src="https://panyu97py.github.io/post-images/1613505466651.gif" alt="" loading="lazy"></figure>
+<p>这个计算过程的代码：</p>
+<pre><code class="language-js">createGroup() {
+  // 获取选中区域的组件数据
+  const areaData = this.getSelectArea()
+  if (areaData.length &lt;= 1) {
+      this.hideArea()
+      return
+  }
+
+  // 根据选中区域和区域中每个组件的位移信息来创建 Group 组件
+  // 要遍历选择区域的每个组件，获取它们的 left top right bottom 信息来进行比较
+  let top = Infinity, left = Infinity
+  let right = -Infinity, bottom = -Infinity
+  areaData.forEach(component =&gt; {
+      let style = {}
+      if (component.component == 'Group') {
+          component.propValue.forEach(item =&gt; {
+              const rectInfo = $(`#component${item.id}`).getBoundingClientRect()
+              style.left = rectInfo.left - this.editorX
+              style.top = rectInfo.top - this.editorY
+              style.right = rectInfo.right - this.editorX
+              style.bottom = rectInfo.bottom - this.editorY
+
+              if (style.left &lt; left) left = style.left
+              if (style.top &lt; top) top = style.top
+              if (style.right &gt; right) right = style.right
+              if (style.bottom &gt; bottom) bottom = style.bottom
+          })
+      } else {
+          style = getComponentRotatedStyle(component.style)
+      }
+
+      if (style.left &lt; left) left = style.left
+      if (style.top &lt; top) top = style.top
+      if (style.right &gt; right) right = style.right
+      if (style.bottom &gt; bottom) bottom = style.bottom
+  })
+
+  this.start.x = left
+  this.start.y = top
+  this.width = right - left
+  this.height = bottom - top
+	
+  // 设置选中区域位移大小信息和区域内的组件数据
+  this.$store.commit('setAreaData', {
+      style: {
+          left,
+          top,
+          width: this.width,
+          height: this.height,
+      },
+      components: areaData,
+  })
+},
+        
+getSelectArea() {
+    const result = []
+    // 区域起点坐标
+    const { x, y } = this.start
+    // 计算所有的组件数据，判断是否在选中区域内
+    this.componentData.forEach(component =&gt; {
+        if (component.isLock) return
+        const { left, top, width, height } = component.style
+        if (x &lt;= left &amp;&amp; y &lt;= top &amp;&amp; (left + width &lt;= x + this.width) &amp;&amp; (top + height &lt;= y + this.height)) {
+            result.push(component)
+        }
+    })
+	
+    // 返回在选中区域内的所有组件
+    return result
+}
+</code></pre>
+<p>简单描述一下这段代码的处理逻辑：</p>
+<ol>
+<li>利用 <a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Element/getBoundingClientRect"><code>getBoundingClientRect()</code></a> 浏览器 API 获取每个组件相对于浏览器视口四个方向上的信息，也就是<code>left</code>、<code>top</code>、<code>right</code>、<code>bottom</code>。</li>
+<li>对比每个组件的这四个信息，取得选中区域的最左、最上、最右、最下四个方向的数值，从而得出一个能包含区域内所有组件的最小区域。</li>
+<li>如果选中区域内已经有一个 <code>Group</code> 组合组件，则需要对它里面的子组件进行计算，而不是对组合组件进行计算。</li>
+</ol>
+<h4 id="组合后的移动-旋转">组合后的移动、旋转</h4>
+<p>为了方便将多个组件一起进行移动、旋转、放大缩小等操作，我新创建了一个 <code>Group</code> 组合组件：</p>
+<pre><code class="language-html">&lt;template&gt;
+    &lt;div class=&quot;group&quot;&gt;
+        &lt;div&gt;
+             &lt;template v-for=&quot;item in propValue&quot;&gt;
+                &lt;component
+                    class=&quot;component&quot;
+                    :is=&quot;item.component&quot;
+                    :style=&quot;item.groupStyle&quot;
+                    :propValue=&quot;item.propValue&quot;
+                    :key=&quot;item.id&quot;
+                    :id=&quot;'component' + item.id&quot;
+                    :element=&quot;item&quot;
+                /&gt;
+            &lt;/template&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+import { getStyle } from '@/utils/style'
+
+export default {
+    props: {
+        propValue: {
+            type: Array,
+            default: () =&gt; [],
+        },
+        element: {
+            type: Object,
+        },
+    },
+    created() {
+        const parentStyle = this.element.style
+        this.propValue.forEach(component =&gt; {
+            // component.groupStyle 的 top left 是相对于 group 组件的位置
+            // 如果已存在 component.groupStyle，说明已经计算过一次了。不需要再次计算
+            if (!Object.keys(component.groupStyle).length) {
+                const style = { ...component.style }
+                component.groupStyle = getStyle(style)
+                component.groupStyle.left = this.toPercent((style.left - parentStyle.left) / parentStyle.width)
+                component.groupStyle.top = this.toPercent((style.top - parentStyle.top) / parentStyle.height)
+                component.groupStyle.width = this.toPercent(style.width / parentStyle.width)
+                component.groupStyle.height = this.toPercent(style.height / parentStyle.height)
+            }
+        })
+    },
+    methods: {
+        toPercent(val) {
+            return val * 100 + '%'
+        },
+    },
+}
+&lt;/script&gt;
+
+&lt;style lang=&quot;scss&quot; scoped&gt;
+.group {
+    &amp; &gt; div {
+        position: relative;
+        width: 100%;
+        height: 100%;
+
+        .component {
+            position: absolute;
+        }
+    }
+}
+&lt;/style&gt;
+</code></pre>
+<p><code>Group</code> 组件的作用就是将区域内的组件放到它下面，成为子组件。并且在创建 <code>Group</code> 组件时，获取每个子组件在 <code>Group</code> 组件内的相对位移和相对大小：</p>
+<pre><code class="language-js">created() {
+    const parentStyle = this.element.style
+    this.propValue.forEach(component =&gt; {
+        // component.groupStyle 的 top left 是相对于 group 组件的位置
+        // 如果已存在 component.groupStyle，说明已经计算过一次了。不需要再次计算
+        if (!Object.keys(component.groupStyle).length) {
+            const style = { ...component.style }
+            component.groupStyle = getStyle(style)
+            component.groupStyle.left = this.toPercent((style.left - parentStyle.left) / parentStyle.width)
+            component.groupStyle.top = this.toPercent((style.top - parentStyle.top) / parentStyle.height)
+            component.groupStyle.width = this.toPercent(style.width / parentStyle.width)
+            component.groupStyle.height = this.toPercent(style.height / parentStyle.height)
+        }
+    })
+},
+methods: {
+        toPercent(val) {
+            return val * 100 + '%'
+        },
+    },
+</code></pre>
+<p>也就是将子组件的 <code>left</code>、<code>top</code>、<code>right</code>、<code>bottom</code> 等属性转成以 <code>%</code> 结尾的相对数值。</p>
+<p><strong>为什么不使用绝对数值？</strong></p>
+<p>如果使用绝对数值，那么在移动 <code>Group</code> 组件时，除了对 <code>Group</code> 组件的属性进行计算外，还需要对它的每个子组件进行计算。并且 <code>Group</code> 包含子组件太多的话，在进行移动、放大缩小时，计算量会非常大，有可能会造成页面卡顿。如果改成相对数值，则只需要在 <code>Group</code> 创建时计算一次。然后在 <code>Group</code> 组件进行移动、旋转时也不用管 <code>Group</code> 的子组件，只对它自己计算即可。</p>
+<figure data-type="image" tabindex="3"><img src="https://panyu97py.github.io/post-images/1613505786018.gif" alt="" loading="lazy"></figure>
+<h4 id="组合后的放大缩小">组合后的放大缩小</h4>
+<p>组合后的放大缩小是个大问题，主要是因为有旋转角度的存在。首先来看一下各个子组件没旋转时的放大缩小：</p>
+<figure data-type="image" tabindex="4"><img src="https://panyu97py.github.io/post-images/1613505848014.gif" alt="" loading="lazy"></figure>
+<p>从动图可以看出，效果非常完美。各个子组件的大小是跟随 <code>Group</code> 组件的大小而改变的。</p>
+<p>现在试着给子组件加上旋转角度，再看一下效果：</p>
+<figure data-type="image" tabindex="5"><img src="https://panyu97py.github.io/post-images/1613505895886.gif" alt="" loading="lazy"></figure>
+<p>为什么会出现这个问题？<br>
+主要是因为一个组件无论旋不旋转，它的 <code>left</code>、<code>top</code> 属性都是不变的。这样就会有一个问题，虽然实际上组件的  <code>left</code>、<code>top</code>、<code>right</code>、<code>bottom</code>  属性没有变化。但在外观上却发生了变化。下面是两个同样的组件：一个没旋转，一个旋转了 45 度。</p>
+<p><img src="https://panyu97py.github.io/post-images/1613505976304.png" alt="" loading="lazy"><br>
+可以看出来旋转后按钮的<code>left</code>、<code>top</code>、<code>right</code>、<code>bottom</code> 属性和我们从外观上看到的是不一样的。</p>
+<p>接下来再看一个具体的示例：</p>
+<figure data-type="image" tabindex="6"><img src="https://panyu97py.github.io/post-images/1613506012073.png" alt="" loading="lazy"></figure>
+<p>上面是一个 <code>Group</code> 组件，它左边的子组件属性为：</p>
+<pre><code class="language-css">transform: rotate(-75.1967deg);
+width: 51.2267%;
+height: 32.2679%;
+top: 33.8661%;
+left: -10.6496%;
+</code></pre>
+<p>可以看到 <code>width</code> 的值为 <code>51.2267%</code>，但从外观上来看，这个子组件最多占 <code>Group</code> 组件宽度的三分之一。所以这就是放大缩小不正常的问题所在。</p>
+<h5 id="一个不可行的解决方案不想看的可以跳过">一个不可行的解决方案（不想看的可以跳过）</h5>
+<p>一开始我想的是，先算出它相对浏览器视口的 <code>left</code>、<code>top</code>、<code>right</code>、<code>bottom</code> 属性，再算出这几个属性在 <code>Group</code> 组件上的相对数值。这可以通过 <code>getBoundingClientRect()</code> <code>API</code> 实现。只要维持外观上的各个属性占比不变，这样 <code>Group</code> 组件在放大缩小时，再通过旋转角度，利用旋转矩阵的知识（这一点在第二篇有详细描述）获取它未旋转前的 t<code>left</code>、<code>top</code>、<code>right</code>、<code>bottom</code>  属性。这样就可以做到子组件动态调整了。</p>
+<p>但是这有个问题，通过 <code>getBoundingClientRect()</code> API 只能获取组件外观上的 <code>left</code>、<code>top</code>、<code>right</code>、<code>bottom</code>  属性。再加上一个角度，参数还是不够，所以无法计算出组件实际的 <code>left</code>、<code>top</code>、<code>right</code>、<code>bottom</code>  属性。</p>
+<figure data-type="image" tabindex="7"><img src="https://panyu97py.github.io/post-images/1613506253945.png" alt="" loading="lazy"></figure>
+<p>就像上面的这张图，只知道原点<code>O(x,y)</code>、 <code>w</code>、<code>h</code> 和旋转角度，无法算出按钮的宽高。</p>
+<h4 id="一个可行的解决方案">一个可行的解决方案</h4>
+<p>这是无意中发现的，我在对 <code>Group</code> 组件进行放大缩小时，发现只要保持 <code>Group</code> 组件的宽高比例，子组件就能做到根据比例放大缩小。那么现在问题就转变成了如何让 <code>Group</code> 组件放大缩小时保持宽高比例。我在网上找到了这一篇<a href="https://github.com/shenhudong/snapping-demo/wiki/corner-handle">文章</a>，它详细描述了一个旋转组件如何保持宽高比来进行放大缩小，并配有源码示例。</p>
+<p>现在我尝试简单描述一下如何保持宽高比对一个旋转组件进行放大缩小（建议还是看看原文）。下面是一个已旋转一定角度的矩形，假设现在拖动它左上方的点进行拉伸。</p>
+<figure data-type="image" tabindex="8"><img src="https://panyu97py.github.io/post-images/1613506394348.png" alt="" loading="lazy"></figure>
+<p><strong>第一步</strong>，算出组件宽高比，以及按下鼠标时通过组件的坐标（无论旋转多少度，组件的 <code>top</code> 、<code>left</code> 属性不变）和大小算出组件中心点：</p>
+<pre><code class="language-js">// 组件宽高比
+const proportion = style.width / style.height
+            
+const center = {
+    x: style.left + style.width / 2,
+    y: style.top + style.height / 2,
+}
+</code></pre>
+<p><strong>第二步</strong>，用当前点击坐标和组件中心点算出当前点击坐标的对称点坐标：</p>
+<pre><code class="language-js">// 获取画布位移信息
+const editorRectInfo = document.querySelector('#editor').getBoundingClientRect()
+
+// 当前点击坐标
+const curPoint = {
+    x: e.clientX - editorRectInfo.left,
+    y: e.clientY - editorRectInfo.top,
+}
+
+// 获取对称点的坐标
+const symmetricPoint = {
+    x: center.x - (curPoint.x - center.x),
+    y: center.y - (curPoint.y - center.y),
+}
+</code></pre>
+<p><strong>第三步</strong>，摁住组件左上角进行拉伸时，通过当前鼠标实时坐标和对称点计算出新的组件中心点：</p>
+<pre><code class="language-js">const curPositon = {
+    x: moveEvent.clientX - editorRectInfo.left,
+    y: moveEvent.clientY - editorRectInfo.top,
+}
+
+const newCenterPoint = getCenterPoint(curPositon, symmetricPoint)
+
+// 求两点之间的中点坐标
+function getCenterPoint(p1, p2) {
+    return {
+        x: p1.x + ((p2.x - p1.x) / 2),
+        y: p1.y + ((p2.y - p1.y) / 2),
+    }
+}
+</code></pre>
+<p>由于组件处于旋转状态，即使你知道了拉伸时移动的 xy 距离，也不能直接对组件进行计算。否则就会出现 BUG，移位或者放大缩小方向不正确。因此，我们需要在组件未旋转的情况下对其进行计算。</p>
+<figure data-type="image" tabindex="9"><img src="https://panyu97py.github.io/post-images/1613506539352.png" alt="" loading="lazy"></figure>
+<p><strong>第四步</strong>，根据已知的旋转角度、新的组件中心点、当前鼠标实时坐标可以算出当前鼠标实时坐标 <code>currentPosition</code> 在未旋转时的坐标 <code>newTopLeftPoint</code>。同时也能根据已知的旋转角度、新的组件中心点、对称点算出组件对称点 sPoint 在未旋转时的坐标 <code>newBottomRightPoint</code>。<br>
+对应的计算公式如下：</p>
+<pre><code class="language-js">/**
+ * 计算根据圆心旋转后的点的坐标
+ * @param   {Object}  point  旋转前的点坐标
+ * @param   {Object}  center 旋转中心
+ * @param   {Number}  rotate 旋转的角度
+ * @return  {Object}         旋转后的坐标
+ * https://www.zhihu.com/question/67425734/answer/252724399 旋转矩阵公式
+ */
+export function calculateRotatedPointCoordinate(point, center, rotate) {
+    /**
+     * 旋转公式：
+     *  点a(x, y)
+     *  旋转中心c(x, y)
+     *  旋转后点n(x, y)
+     *  旋转角度θ                tan ??
+     * nx = cosθ * (ax - cx) - sinθ * (ay - cy) + cx
+     * ny = sinθ * (ax - cx) + cosθ * (ay - cy) + cy
+     */
+
+    return {
+        x: (point.x - center.x) * Math.cos(angleToRadian(rotate)) - (point.y - center.y) * Math.sin(angleToRadian(rotate)) + center.x,
+        y: (point.x - center.x) * Math.sin(angleToRadian(rotate)) + (point.y - center.y) * Math.cos(angleToRadian(rotate)) + center.y,
+    }
+}
+</code></pre>
+<p>上面的公式涉及到线性代数中旋转矩阵的知识，对于一个没上过大学的人来说，实在太难了。还好我从<a href="https://www.zhihu.com/question/67425734/answer/252724399">知乎上的一个回答</a>中找到了这一公式的推理过程，下面是回答的原文：</p>
+<figure data-type="image" tabindex="10"><img src="https://panyu97py.github.io/post-images/1613506660740.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="11"><img src="https://panyu97py.github.io/post-images/1613506688090.png" alt="" loading="lazy"></figure>
+<p>通过以上几个计算值，就可以得到组件新的位移值 <code>top</code>、<code>left</code> 以及新的组件大小。对应的完整代码如下：</p>
+<pre><code class="language-js">function calculateLeftTop(style, curPositon, pointInfo) {
+    const { symmetricPoint } = pointInfo
+    const newCenterPoint = getCenterPoint(curPositon, symmetricPoint)
+    const newTopLeftPoint = calculateRotatedPointCoordinate(curPositon, newCenterPoint, -style.rotate)
+    const newBottomRightPoint = calculateRotatedPointCoordinate(symmetricPoint, newCenterPoint, -style.rotate)
+  
+    const newWidth = newBottomRightPoint.x - newTopLeftPoint.x
+    const newHeight = newBottomRightPoint.y - newTopLeftPoint.y
+    if (newWidth &gt; 0 &amp;&amp; newHeight &gt; 0) {
+        style.width = Math.round(newWidth)
+        style.height = Math.round(newHeight)
+        style.left = Math.round(newTopLeftPoint.x)
+        style.top = Math.round(newTopLeftPoint.y)
+    }
+}
+</code></pre>
+<p>现在再来看一下旋转后的放大缩小：</p>
+<figure data-type="image" tabindex="12"><img src="https://panyu97py.github.io/post-images/1613506759227.gif" alt="" loading="lazy"></figure>
+<p><strong>第五步</strong>，由于我们现在需要的是锁定宽高比来进行放大缩小，所以需要重新计算拉伸后的图形的左上角坐标。</p>
+<p>这里先确定好几个形状的命名：</p>
+<ul>
+<li>原图形: 　红色部分</li>
+<li>新图形: 　蓝色部分</li>
+<li>修正图形: 绿色部分，即加上宽高比锁定规则的修正图形</li>
+</ul>
+<figure data-type="image" tabindex="13"><img src="https://panyu97py.github.io/post-images/1613506825223.gif" alt="" loading="lazy"></figure>
+<p>在第四步中算出组件未旋转前的 <code>newTopLeftPoint</code> <code>newBottomRightPoint</code> <code>newWidth</code> <code>newHeight</code> 后，需要根据宽高比 <code>proportion</code> 来算出新的宽度或高度。</p>
+<figure data-type="image" tabindex="14"><img src="https://panyu97py.github.io/post-images/1613506905389.png" alt="" loading="lazy"></figure>
+<p>上图就是一个需要改变高度的示例，计算过程如下：</p>
+<pre><code class="language-js">if (newWidth / newHeight &gt; proportion) {
+    newTopLeftPoint.x += Math.abs(newWidth - newHeight * proportion)
+    newWidth = newHeight * proportion
+} else {
+    newTopLeftPoint.y += Math.abs(newHeight - newWidth / proportion)
+    newHeight = newWidth / proportion
+}
+</code></pre>
+<p>由于现在求的未旋转前的坐标是以没按比例缩减宽高前的坐标来计算的，所以缩减宽高后，需要按照原来的中心点旋转回去，获得缩减宽高并旋转后对应的坐标。然后以这个坐标和对称点获得新的中心点，并重新计算未旋转前的坐标。</p>
+<figure data-type="image" tabindex="15"><img src="https://panyu97py.github.io/post-images/1613506955962.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="16"><img src="https://panyu97py.github.io/post-images/1613507009595.png" alt="" loading="lazy"></figure>
+<p>经过修改后的完整代码如下：</p>
+<pre><code class="language-js">function calculateLeftTop(style, curPositon, proportion, needLockProportion, pointInfo) {
+    const { symmetricPoint } = pointInfo
+    let newCenterPoint = getCenterPoint(curPositon, symmetricPoint)
+    let newTopLeftPoint = calculateRotatedPointCoordinate(curPositon, newCenterPoint, -style.rotate)
+    let newBottomRightPoint = calculateRotatedPointCoordinate(symmetricPoint, newCenterPoint, -style.rotate)
+  
+    let newWidth = newBottomRightPoint.x - newTopLeftPoint.x
+    let newHeight = newBottomRightPoint.y - newTopLeftPoint.y
+
+    if (needLockProportion) {
+        if (newWidth / newHeight &gt; proportion) {
+            newTopLeftPoint.x += Math.abs(newWidth - newHeight * proportion)
+            newWidth = newHeight * proportion
+        } else {
+            newTopLeftPoint.y += Math.abs(newHeight - newWidth / proportion)
+            newHeight = newWidth / proportion
+        }
+
+        // 由于现在求的未旋转前的坐标是以没按比例缩减宽高前的坐标来计算的
+        // 所以缩减宽高后，需要按照原来的中心点旋转回去，获得缩减宽高并旋转后对应的坐标
+        // 然后以这个坐标和对称点获得新的中心点，并重新计算未旋转前的坐标
+        const rotatedTopLeftPoint = calculateRotatedPointCoordinate(newTopLeftPoint, newCenterPoint, style.rotate)
+        newCenterPoint = getCenterPoint(rotatedTopLeftPoint, symmetricPoint)
+        newTopLeftPoint = calculateRotatedPointCoordinate(rotatedTopLeftPoint, newCenterPoint, -style.rotate)
+        newBottomRightPoint = calculateRotatedPointCoordinate(symmetricPoint, newCenterPoint, -style.rotate)
+    
+        newWidth = newBottomRightPoint.x - newTopLeftPoint.x
+        newHeight = newBottomRightPoint.y - newTopLeftPoint.y
+    }
+
+    if (newWidth &gt; 0 &amp;&amp; newHeight &gt; 0) {
+        style.width = Math.round(newWidth)
+        style.height = Math.round(newHeight)
+        style.left = Math.round(newTopLeftPoint.x)
+        style.top = Math.round(newTopLeftPoint.y)
+    }
+}
+</code></pre>
+<p>保持宽高比进行放大缩小的效果如下：</p>
+<figure data-type="image" tabindex="17"><img src="https://panyu97py.github.io/post-images/1613507087355.gif" alt="" loading="lazy"></figure>
+<p>当 <code>Group</code> 组件有旋转的子组件时，才需要保持宽高比进行放大缩小。所以在创建 <code>Group</code> 组件时可以判断一下子组件是否有旋转角度。如果没有，就不需要保持宽度比进行放大缩小。</p>
+<pre><code class="language-js">isNeedLockProportion() {
+    if (this.element.component != 'Group') return false
+    const ratates = [0, 90, 180, 360]
+    for (const component of this.element.propValue) {
+        if (!ratates.includes(mod360(parseInt(component.style.rotate)))) {
+            return true
+        }
+    }
+
+    return false
+}
+</code></pre>
+<h4 id="拆分后子组件样式的恢复">拆分后子组件样式的恢复</h4>
+<p>将多个组件组合在一起只是第一步，第二步是将 <code>Group</code> 组件进行拆分并恢复各个子组件的样式。保证拆分后的子组件在外观上的属性不变。</p>
+<p>计算代码如下：</p>
+<pre><code class="language-js">// store
+decompose({ curComponent, editor }) {
+    const parentStyle = { ...curComponent.style }
+    const components = curComponent.propValue
+    const editorRect = editor.getBoundingClientRect()
+
+    store.commit('deleteComponent')
+    components.forEach(component =&gt; {
+        decomposeComponent(component, editorRect, parentStyle)
+        store.commit('addComponent', { component })
+    })
+}
+        
+// 将组合中的各个子组件拆分出来，并计算它们新的 style
+export default function decomposeComponent(component, editorRect, parentStyle) {
+    // 子组件相对于浏览器视口的样式
+    const componentRect = $(`#component${component.id}`).getBoundingClientRect()
+    // 获取元素的中心点坐标
+    const center = {
+        x: componentRect.left - editorRect.left + componentRect.width / 2,
+        y: componentRect.top - editorRect.top + componentRect.height / 2,
+    }
+
+    component.style.rotate = mod360(component.style.rotate + parentStyle.rotate)
+    component.style.width = parseFloat(component.groupStyle.width) / 100 * parentStyle.width
+    component.style.height = parseFloat(component.groupStyle.height) / 100 * parentStyle.height
+    // 计算出元素新的 top left 坐标
+    component.style.left = center.x - component.style.width / 2
+    component.style.top = center.y - component.style.height / 2
+    component.groupStyle = {}
+}
+</code></pre>
+<p>这段代码的处理逻辑为：</p>
+<ol>
+<li>遍历 <code>Group</code> 的子组件并恢复它们的样式</li>
+<li>利用 <code>getBoundingClientRect() ``API</code> 获取子组件相对于浏览器视口的 <code>left</code> <code>top</code> <code>width</code> <code>height</code> 属性。</li>
+<li>利用这四个属性计算出子组件的中心点坐标。</li>
+<li>由于子组件的 <code>width</code> <code>height</code> 属性是相对于 <code>Group</code> 组件的，所以将它们的百分比值和 <code>Group</code> 相乘得出具体数值。</li>
+<li>再用中心点 <code>center(x, y)</code>减去子组件宽高的一半得出它的 <code>left</code> <code>top</code> 属性。</li>
+</ol>
+<p>至此，组合和拆分就讲解完了。</p>
+<h3 id="19-文本组件">19. 文本组件</h3>
+<p>文本组件 <code>VText</code> 之前就已经实现过了，但不完美。例如无法对文字进行选中。现在我对它进行了重写，让它支持选中功能。</p>
+<pre><code class="language-js">&lt;template&gt;
+    &lt;div v-if=&quot;editMode == 'edit'&quot; class=&quot;v-text&quot; @keydown=&quot;handleKeydown&quot; @keyup=&quot;handleKeyup&quot;&gt;
+        &lt;!-- tabindex &gt;= 0 使得双击时聚集该元素 --&gt;
+        &lt;div :contenteditable=&quot;canEdit&quot; :class=&quot;{ canEdit }&quot; @dblclick=&quot;setEdit&quot; :tabindex=&quot;element.id&quot; @paste=&quot;clearStyle&quot;
+            @mousedown=&quot;handleMousedown&quot; @blur=&quot;handleBlur&quot; ref=&quot;text&quot; v-html=&quot;element.propValue&quot; @input=&quot;handleInput&quot;
+            :style=&quot;{ verticalAlign: element.style.verticalAlign }&quot;
+        &gt;&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div v-else class=&quot;v-text&quot;&gt;
+        &lt;div v-html=&quot;element.propValue&quot; :style=&quot;{ verticalAlign: element.style.verticalAlign }&quot;&gt;&lt;/div&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+import { mapState } from 'vuex'
+import { keycodes } from '@/utils/shortcutKey.js'
+
+export default {
+    props: {
+        propValue: {
+            type: String,
+            require: true,
+        },
+        element: {
+            type: Object,
+        },
+    },
+    data() {
+        return {
+            canEdit: false,
+            ctrlKey: 17,
+            isCtrlDown: false,
+        }
+    },
+    computed: {
+        ...mapState([
+            'editMode',
+        ]),
+    },
+    methods: {
+        handleInput(e) {
+            this.$emit('input', this.element, e.target.innerHTML)
+        },
+
+        handleKeydown(e) {
+            if (e.keyCode == this.ctrlKey) {
+                this.isCtrlDown = true
+            } else if (this.isCtrlDown &amp;&amp; this.canEdit &amp;&amp; keycodes.includes(e.keyCode)) {
+                e.stopPropagation()
+            } else if (e.keyCode == 46) { // deleteKey
+                e.stopPropagation()
+            }
+        },
+
+        handleKeyup(e) {
+            if (e.keyCode == this.ctrlKey) {
+                this.isCtrlDown = false
+            }
+        },
+
+        handleMousedown(e) {
+            if (this.canEdit) {
+                e.stopPropagation()
+            }
+        },
+
+        clearStyle(e) {
+            e.preventDefault()
+            const clp = e.clipboardData
+            const text = clp.getData('text/plain') || ''
+            if (text !== '') {
+                document.execCommand('insertText', false, text)
+            }
+
+            this.$emit('input', this.element, e.target.innerHTML)
+        },
+
+        handleBlur(e) {
+            this.element.propValue = e.target.innerHTML || '&amp;nbsp;'
+            this.canEdit = false
+        },
+
+        setEdit() {
+            this.canEdit = true
+            // 全选
+            this.selectText(this.$refs.text)
+        },
+
+        selectText(element) {
+            const selection = window.getSelection()
+            const range = document.createRange()
+            range.selectNodeContents(element)
+            selection.removeAllRanges()
+            selection.addRange(range)
+        },
+    },
+}
+&lt;/script&gt;
+
+&lt;style lang=&quot;scss&quot; scoped&gt;
+.v-text {
+    width: 100%;
+    height: 100%;
+    display: table;
+
+    div {
+        display: table-cell;
+        width: 100%;
+        height: 100%;
+        outline: none;
+    }
+
+    .canEdit {
+        cursor: text;
+        height: 100%;
+    }
+}
+&lt;/style&gt;
+</code></pre>
+<p>改造后的 VText 组件功能如下：</p>
+<ol>
+<li>双击启动编辑。</li>
+<li>支持选中文本。</li>
+<li>粘贴时过滤掉文本的样式。</li>
+<li>换行时自动扩充文本框的高度。</li>
+</ol>
+<figure data-type="image" tabindex="18"><img src="https://panyu97py.github.io/post-images/1613507304088.gif" alt="" loading="lazy"></figure>
+<h3 id="20-矩形组件">20. 矩形组件</h3>
+<p>矩形组件其实就是一个内嵌 <code>VText</code> 文本组件的一个 <code>DIV</code></p>
+<pre><code class="language-js">&lt;template&gt;
+    &lt;div class=&quot;rect-shape&quot;&gt;
+        &lt;v-text :propValue=&quot;element.propValue&quot; :element=&quot;element&quot; /&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+export default {
+    props: {
+        element: {
+            type: Object,
+        },
+    },
+}
+&lt;/script&gt;
+
+&lt;style lang=&quot;scss&quot; scoped&gt;
+.rect-shape {
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+}
+&lt;/style&gt;
+</code></pre>
+<p><code>VText</code> 文本组件有的功能它都有，并且可以任意放大缩小。</p>
+<figure data-type="image" tabindex="19"><img src="https://panyu97py.github.io/post-images/1613507388868.gif" alt="" loading="lazy"></figure>
+<h3 id="21-锁定组件">21. 锁定组件</h3>
+<p>锁定组件主要是看到 <code>processon</code> 和墨刀有这个功能，于是我顺便实现了。锁定组件的具体需求为：不能移动、放大缩小、旋转、复制、粘贴等，只能进行解锁操作。<br>
+它的实现原理也不难：</p>
+<ol>
+<li>在自定义组件上加一个 <code>isLock</code> 属性，表示是否锁定组件。</li>
+<li>在点击组件时，根据 <code>isLock</code> 是否为 <code>true</code> 来隐藏组件上的八个点和旋转图标。</li>
+<li>为了突出一个组件被锁定，给它加上透明度属性和一个锁的图标。</li>
+<li>如果组件被锁定，置灰上面所说的需求对应的按钮，不能被点击。</li>
+</ol>
+<p>相关代码如下：</p>
+<pre><code class="language-js">export const commonAttr = {
+    animations: [],
+    events: {},
+    groupStyle: {}, // 当一个组件成为 Group 的子组件时使用
+    isLock: false, // 是否锁定组件
+}
+</code></pre>
+<pre><code class="language-html">&lt;el-button @click=&quot;decompose&quot; 
+:disabled=&quot;!curComponent || curComponent.isLock || curComponent.component != 'Group'&quot;&gt;拆分&lt;/el-button&gt;
+
+&lt;el-button @click=&quot;lock&quot; :disabled=&quot;!curComponent || curComponent.isLock&quot;&gt;锁定&lt;/el-button&gt;
+&lt;el-button @click=&quot;unlock&quot; :disabled=&quot;!curComponent || !curComponent.isLock&quot;&gt;解锁&lt;/el-button&gt;
+</code></pre>
+<pre><code class="language-html">&lt;template&gt;
+    &lt;div class=&quot;contextmenu&quot; v-show=&quot;menuShow&quot; :style=&quot;{ top: menuTop + 'px', left: menuLeft + 'px' }&quot;&gt;
+        &lt;ul @mouseup=&quot;handleMouseUp&quot;&gt;
+            &lt;template v-if=&quot;curComponent&quot;&gt;
+                &lt;template v-if=&quot;!curComponent.isLock&quot;&gt;
+                    &lt;li @click=&quot;copy&quot;&gt;复制&lt;/li&gt;
+                    &lt;li @click=&quot;paste&quot;&gt;粘贴&lt;/li&gt;
+                    &lt;li @click=&quot;cut&quot;&gt;剪切&lt;/li&gt;
+                    &lt;li @click=&quot;deleteComponent&quot;&gt;删除&lt;/li&gt;
+                    &lt;li @click=&quot;lock&quot;&gt;锁定&lt;/li&gt;
+                    &lt;li @click=&quot;topComponent&quot;&gt;置顶&lt;/li&gt;
+                    &lt;li @click=&quot;bottomComponent&quot;&gt;置底&lt;/li&gt;
+                    &lt;li @click=&quot;upComponent&quot;&gt;上移&lt;/li&gt;
+                    &lt;li @click=&quot;downComponent&quot;&gt;下移&lt;/li&gt;
+                &lt;/template&gt;
+                &lt;li v-else @click=&quot;unlock&quot;&gt;解锁&lt;/li&gt;
+            &lt;/template&gt;
+            &lt;li v-else @click=&quot;paste&quot;&gt;粘贴&lt;/li&gt;
+        &lt;/ul&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+</code></pre>
+<figure data-type="image" tabindex="20"><img src="https://panyu97py.github.io/post-images/1613507515799.gif" alt="" loading="lazy"></figure>
+<h3 id="22-快捷键">22. 快捷键</h3>
+<p>支持快捷键主要是为了提升开发效率，用鼠标点点点毕竟没有按键盘快。目前快捷键支持的功能如下：</p>
+<pre><code>const ctrlKey = 17, 
+    vKey = 86, // 粘贴
+    cKey = 67, // 复制
+    xKey = 88, // 剪切
+
+    yKey = 89, // 重做
+    zKey = 90, // 撤销
+
+    gKey = 71, // 组合
+    bKey = 66, // 拆分
+
+    lKey = 76, // 锁定
+    uKey = 85, // 解锁
+
+    sKey = 83, // 保存
+    pKey = 80, // 预览
+    dKey = 68, // 删除
+    deleteKey = 46, // 删除
+    eKey = 69 // 清空画布
+</code></pre>
+<p>实现原理主要是利用 <code>window</code> 全局监听按键事件，在符合条件的按键触发时执行对应的操作：</p>
+<pre><code class="language-js">// 与组件状态无关的操作
+const basemap = {
+    [vKey]: paste,
+    [yKey]: redo,
+    [zKey]: undo,
+    [sKey]: save,
+    [pKey]: preview,
+    [eKey]: clearCanvas,
+}
+
+// 组件锁定状态下可以执行的操作
+const lockMap = {
+    ...basemap,
+    [uKey]: unlock,
+}
+
+// 组件未锁定状态下可以执行的操作
+const unlockMap = {
+    ...basemap,
+    [cKey]: copy,
+    [xKey]: cut,
+    [gKey]: compose,
+    [bKey]: decompose,
+    [dKey]: deleteComponent,
+    [deleteKey]: deleteComponent,
+    [lKey]: lock,
+}
+
+let isCtrlDown = false
+// 全局监听按键操作并执行相应命令
+export function listenGlobalKeyDown() {
+    window.onkeydown = (e) =&gt; {
+        const { curComponent } = store.state
+        if (e.keyCode == ctrlKey) {
+            isCtrlDown = true
+        } else if (e.keyCode == deleteKey &amp;&amp; curComponent) {
+            store.commit('deleteComponent')
+            store.commit('recordSnapshot')
+        } else if (isCtrlDown) {
+            if (!curComponent || !curComponent.isLock) {
+                e.preventDefault()
+                unlockMap[e.keyCode] &amp;&amp; unlockMap[e.keyCode]()
+            } else if (curComponent &amp;&amp; curComponent.isLock) {
+                e.preventDefault()
+                lockMap[e.keyCode] &amp;&amp; lockMap[e.keyCode]()
+            }
+        }
+    }
+
+    window.onkeyup = (e) =&gt; {
+        if (e.keyCode == ctrlKey) {
+            isCtrlDown = false
+        }
+    }
+}
+
+</code></pre>
+<p>为了防止和浏览器默认快捷键冲突，所以需要加上 <code>e.preventDefault()</code>。</p>
+<h3 id="23-网格线">23. 网格线</h3>
+<p>网格线功能使用 <code>SVG</code> 来实现：</p>
+<pre><code class="language-html">&lt;template&gt;
+    &lt;svg class=&quot;grid&quot; width=&quot;100%&quot; height=&quot;100%&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;&gt;
+        &lt;defs&gt;
+            &lt;pattern id=&quot;smallGrid&quot; width=&quot;7.236328125&quot; height=&quot;7.236328125&quot; patternUnits=&quot;userSpaceOnUse&quot;&gt;
+                &lt;path 
+                    d=&quot;M 7.236328125 0 L 0 0 0 7.236328125&quot; 
+                    fill=&quot;none&quot; 
+                    stroke=&quot;rgba(207, 207, 207, 0.3)&quot; 
+                    stroke-width=&quot;1&quot;&gt;
+                &lt;/path&gt;
+            &lt;/pattern&gt;
+            &lt;pattern id=&quot;grid&quot; width=&quot;36.181640625&quot; height=&quot;36.181640625&quot; patternUnits=&quot;userSpaceOnUse&quot;&gt;
+                &lt;rect width=&quot;36.181640625&quot; height=&quot;36.181640625&quot; fill=&quot;url(#smallGrid)&quot;&gt;&lt;/rect&gt;
+                &lt;path 
+                    d=&quot;M 36.181640625 0 L 0 0 0 36.181640625&quot; 
+                    fill=&quot;none&quot; 
+                    stroke=&quot;rgba(186, 186, 186, 0.5)&quot; 
+                    stroke-width=&quot;1&quot;&gt;
+                &lt;/path&gt;
+            &lt;/pattern&gt;
+        &lt;/defs&gt;
+        &lt;rect width=&quot;100%&quot; height=&quot;100%&quot; fill=&quot;url(#grid)&quot;&gt;&lt;/rect&gt;
+    &lt;/svg&gt;
+&lt;/template&gt;
+
+&lt;style lang=&quot;scss&quot; scoped&gt;
+.grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+&lt;/style&gt;
+
+</code></pre>
+<p>对 SVG 不太懂的，建议看一下 <a href="https://developer.mozilla.org/zh-CN/docs/Web/SVG">MDN 的教程</a>。</p>
+<h3 id="24-编辑器快照的另一种实现方式">24. 编辑器快照的另一种实现方式</h3>
+<p>在系列文章的第一篇中，我已经分析过快照的实现原理。</p>
+<pre><code class="language-js">snapshotData: [], // 编辑器快照数据
+snapshotIndex: -1, // 快照索引
+        
+undo(state) {
+    if (state.snapshotIndex &gt;= 0) {
+        state.snapshotIndex--
+        store.commit('setComponentData', deepCopy(state.snapshotData[state.snapshotIndex]))
+    }
+},
+
+redo(state) {
+    if (state.snapshotIndex &lt; state.snapshotData.length - 1) {
+        state.snapshotIndex++
+        store.commit('setComponentData', deepCopy(state.snapshotData[state.snapshotIndex]))
+    }
+},
+
+setComponentData(state, componentData = []) {
+    Vue.set(state, 'componentData', componentData)
+},
+
+recordSnapshot(state) {
+    // 添加新的快照
+    state.snapshotData[++state.snapshotIndex] = deepCopy(state.componentData)
+    // 在 undo 过程中，添加新的快照时，要将它后面的快照清理掉
+    if (state.snapshotIndex &lt; state.snapshotData.length - 1) {
+        state.snapshotData = state.snapshotData.slice(0, state.snapshotIndex + 1)
+    }
+},
+</code></pre>
+<p>用一个数组来保存编辑器的快照数据。保存快照就是不停地执行 <code>push()</code> 操作，将当前的编辑器数据推入 <code>snapshotData</code> 数组，并增加快照索引 <code>snapshotIndex。</code><br>
+由于每一次添加快照都是将当前编辑器的所有组件数据推入 <code>snapshotData</code>，保存的快照数据越多占用的内存就越多。对此有两个解决方案：</p>
+<ol>
+<li>限制快照步数，例如只能保存 50 步的快照数据。</li>
+<li>保存快照只保存差异部分。</li>
+</ol>
+<p>现在详细描述一下第二个解决方案。<br>
+假设依次往画布上添加 a b c d 四个组件，在原来的实现中，对应的 <code>snapshotData</code> 数据为：</p>
+<pre><code>// snapshotData
+[
+  [a],
+  [a, b],
+  [a, b, c],
+  [a, b, c, d],
+]
+</code></pre>
+<p>从上面的代码可以发现，每一相邻的快照中，只有一个数据是不同的。所以我们可以为每一步的快照添加一个类型字段，用来表示此次操作是添加还是删除。</p>
+<p>那么上面添加四个组件的操作，所对应的 <code>snapshotData</code> 数据为：</p>
+<pre><code>// snapshotData
+[
+  [{ type: 'add', value: a }],
+  [{ type: 'add', value: b }],
+  [{ type: 'add', value: c }],
+  [{ type: 'add', value: d }],
+]
+</code></pre>
+<p>如果我们要删除 c 组件，那么 <code>snapshotData</code> 数据将变为：</p>
+<pre><code>// snapshotData
+[
+  [{ type: 'add', value: a }],
+  [{ type: 'add', value: b }],
+  [{ type: 'add', value: c }],
+  [{ type: 'add', value: d }],
+  [{ type: 'remove', value: c }],
+]
+</code></pre>
+<p>那如何使用现在的快照数据呢？</p>
+<p>我们需要遍历一遍快照数据，来生成编辑器的组件数据 <code>componentData</code>。假设在上面的数据基础上执行了 <code>undo</code> 撤销操作：</p>
+<pre><code>// snapshotData
+// 快照索引 snapshotIndex 此时为 3
+[
+  [{ type: 'add', value: a }],
+  [{ type: 'add', value: b }],
+  [{ type: 'add', value: c }],
+  [{ type: 'add', value: d }],
+  [{ type: 'remove', value: c }],
+]
+</code></pre>
+<ol>
+<li>snapshotData[0] 类型为 add，将组件 a 添加到 componentData 中，此时 componentData 为 [a]</li>
+<li>依次类推 [a, b]</li>
+<li>[a, b, c]</li>
+<li>[a, b, c, d]</li>
+</ol>
+<p>如果这时执行 <code>redo</code> 重做操作，快照索引 <code>snapshotIndex</code> 变为 4。对应的快照数据类型为 <code>type: 'remove'</code>， 移除组件 c。则数组数据为<code>[a, b, d]</code>。<br>
+这种方法其实就是时间换空间，虽然每一次保存的快照数据只有一项，但每次都得遍历一遍所有的快照数据。两种方法都不完美，要使用哪种取决于你，目前我仍在使用第一种方法。</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[可视化拖拽组件库一些技术要点原理分析（二）]]></title>
+        <id>https://panyu97py.github.io/post/1yIc3meiD/</id>
+        <link href="https://panyu97py.github.io/post/1yIc3meiD/">
+        </link>
+        <updated>2021-02-16T18:52:40.000Z</updated>
+        <content type="html"><![CDATA[<p>本文摘自<a href="https://juejin.cn/post/6918881497264947207">掘金</a>,写的很好抄录一下。建议多去给原作者点赞👍</p>
+<p>上一篇文章主要讲解了以下几个功能点：</p>
+<ol>
+<li>编辑器</li>
+<li>自定义组件</li>
+<li>拖拽</li>
+<li>删除组件、调整图层层级</li>
+<li>放大缩小</li>
+<li>撤消、重做</li>
+<li>组件属性设置</li>
+<li>吸附</li>
+<li>预览、保存代码</li>
+<li>绑定事件</li>
+<li>绑定动画</li>
+<li>导入 PSD</li>
+<li>手机模式</li>
+</ol>
+<p>现在这篇文章会在此基础上再补充 4 个功能点，分别是：</p>
+<ul>
+<li>拖拽旋转</li>
+<li>复制粘贴剪切</li>
+<li>数据交互</li>
+<li>发布<br>
+和上篇文章一样，我已经将新功能的代码更新到了 github：</li>
+</ul>
+<p><a href="https://github.com/woai3c/visual-drag-demo">github 项目地址</a></p>
+<p><a href="https://woai3c.github.io/visual-drag-demo/#/">在线预览</a></p>
+<p><strong>友善提醒</strong>： 建议结合源码一起阅读，效果更好（这个 DEMO 使用的是 Vue 技术栈）。</p>
+<h3 id="14-拖拽旋转">14. 拖拽旋转</h3>
+<p>在写上一篇文章时，原来的 DEMO 已经可以支持旋转功能了。但是这个旋转功能还有很多不完善的地方：</p>
+<ol>
+<li>不支持拖拽旋转。</li>
+<li>旋转后的放大缩小不正确。</li>
+<li>旋转后的自动吸附不正确。</li>
+<li>旋转后八个可伸缩点的光标不正确。</li>
+</ol>
+<p>这一小节，我们将逐一解决这四个问题。</p>
+<h4 id="拖拽旋转">拖拽旋转</h4>
+<p>拖拽旋转需要使用 <a href="https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Math/atan2"><code>Math.atan2()</code></a>函数。</p>
+<blockquote>
+<p>Math.atan2() 返回从原点(0,0)到(x,y)点的线段与x轴正方向之间的平面角度(弧度值)，也就是Math.atan2(y,x)。Math.atan2(y,x)中的y和x都是相对于圆点(0,0)的距离。</p>
+</blockquote>
+<p>简单的说就是以组件中心点为原点<code>(centerX,centerY)</code>，用户按下鼠标时的坐标设为 <code>(startX,startY)</code>，鼠标移动时的坐标设为<code>(curX,curY)</code>。旋转角度可以通过 <code>(startX,startY)</code>和 <code>(curX,curY)</code>计算得出。<br>
+<img src="https://panyu97py.github.io/post-images/1613501916438.png" alt="" loading="lazy"></p>
+<p>那我们如何得到从点 <code>(startX,startY)</code>到点<code>(curX,curY)</code>之间的旋转角度呢？</p>
+<p><strong>第一步</strong>，鼠标点击时的坐标设为<code>(startX,startY)</code>：</p>
+<pre><code class="language-js">const startY = e.clientY
+const startX = e.clientX
+</code></pre>
+<p><strong>第二步</strong>，算出组件中心点：</p>
+<pre><code class="language-js">// 获取组件中心点位置
+const rect = this.$el.getBoundingClientRect()
+const centerX = rect.left + rect.width / 2
+const centerY = rect.top + rect.height / 2
+</code></pre>
+<p><strong>第三步</strong>，按住鼠标移动时的坐标设为<code>(curX,curY)</code>：</p>
+<pre><code class="language-js">const curX = moveEvent.clientX
+const curY = moveEvent.clientY
+</code></pre>
+<p><strong>第四步</strong>，分别算出<code>(startX,startY)</code>和<code>(curX,curY)</code> 对应的角度，再将它们相减得出旋转的角度。另外，还需要注意的就是 <code>Math.atan2()</code>方法的返回值是一个弧度，因此还需要将弧度转化为角度。所以完整的代码为：</p>
+<pre><code class="language-js">// 旋转前的角度
+const rotateDegreeBefore = Math.atan2(startY - centerY, startX - centerX) / (Math.PI / 180)
+// 旋转后的角度
+const rotateDegreeAfter = Math.atan2(curY - centerY, curX - centerX) / (Math.PI / 180)
+// 获取旋转的角度值， startRotate 为初始角度值
+pos.rotate = startRotate + rotateDegreeAfter - rotateDegreeBefore
+</code></pre>
+<figure data-type="image" tabindex="1"><img src="https://panyu97py.github.io/post-images/1613502114333.gif" alt="" loading="lazy"></figure>
+<h4 id="放大缩小">放大缩小</h4>
+<p>组件旋转后的放大缩小会有 BUG。</p>
+<figure data-type="image" tabindex="2"><img src="https://panyu97py.github.io/post-images/1613502171703.gif" alt="" loading="lazy"></figure>
+<p>从上图可以看到，放大缩小时会发生移位。另外伸缩的方向和我们拖动的方向也不对。造成这一 BUG 的原因是：当初设计放大缩小功能没有考虑到旋转的场景。所以无论旋转多少角度，放大缩小仍然是按没旋转时计算的。</p>
+<p>下面再看一个具体的示例：</p>
+<figure data-type="image" tabindex="3"><img src="https://panyu97py.github.io/post-images/1613502210577.png" alt="" loading="lazy"></figure>
+<p>从上图可以看出，在没有旋转时，按住顶点往上拖动，只需用 <code>y2 - y1</code> 就可以得出拖动距离<code>s</code>。这时将组件原来的高度加上 <code>s</code> 就能得出新的高度，同时将组件的 <code>top</code>、<code>left</code> 属性更新。</p>
+<figure data-type="image" tabindex="4"><img src="https://panyu97py.github.io/post-images/1613502283095.png" alt="" loading="lazy"></figure>
+<p>现在旋转 180 度，如果这时拖住顶点往下拖动，我们期待的结果是组件高度增加。但这时计算的方式和原来没旋转时是一样的，所以结果和我们期待的相反，组件的高度将会变小（如果不理解这个现象，可以想像一下没有旋转的那张图，按住顶点往下拖动）。</p>
+<figure data-type="image" tabindex="5"><img src="https://panyu97py.github.io/post-images/1613502327476.gif" alt="" loading="lazy"></figure>
+<p>如何解决这个问题呢？我从 github 上的一个项目<a href="https://github.com/shenhudong/snapping-demo/wiki/corner-handle"> <code>snapping-demo</code> </a>找到了解决方案：将放大缩小和旋转角度关联起来。</p>
+<h5 id="解决方案">解决方案</h5>
+<p>下面是一个已旋转一定角度的矩形，假设现在拖动它左上方的点进行拉伸。</p>
+<figure data-type="image" tabindex="6"><img src="https://panyu97py.github.io/post-images/1613502421743.png" alt="" loading="lazy"></figure>
+<p>现在我们将一步步分析如何得出拉伸后的组件的正确大小和位移。</p>
+<p><strong>第一步</strong>，按下鼠标时通过组件的坐标（无论旋转多少度，组件的 top left 属性不变）和大小算出组件中心点：</p>
+<pre><code class="language-js">const center = {
+    x: style.left + style.width / 2,
+    y: style.top + style.height / 2,
+}
+</code></pre>
+<p><strong>第二步</strong>，用<strong>当前点击坐标</strong>和<strong>组件中心点算</strong>出当前点击坐标的对称点坐标：</p>
+<pre><code class="language-js">// 获取画布位移信息
+const editorRectInfo = document.querySelector('#editor').getBoundingClientRect()
+
+// 当前点击坐标
+const curPoint = {
+    x: e.clientX - editorRectInfo.left,
+    y: e.clientY - editorRectInfo.top,
+}
+
+// 获取对称点的坐标
+const symmetricPoint = {
+    x: center.x - (curPoint.x - center.x),
+    y: center.y - (curPoint.y - center.y),
+}
+</code></pre>
+<p><strong>第三步</strong>，摁住组件左上角进行拉伸时，通过当前鼠标实时坐标和对称点计算出新的组件中心点：</p>
+<pre><code class="language-js">const curPositon = {
+    x: moveEvent.clientX - editorRectInfo.left,
+    y: moveEvent.clientY - editorRectInfo.top,
+}
+
+const newCenterPoint = getCenterPoint(curPositon, symmetricPoint)
+
+// 求两点之间的中点坐标
+function getCenterPoint(p1, p2) {
+    return {
+        x: p1.x + ((p2.x - p1.x) / 2),
+        y: p1.y + ((p2.y - p1.y) / 2),
+    }
+}
+</code></pre>
+<p>由于组件处于旋转状态，即使你知道了拉伸时移动的<code>xy</code>距离，也不能直接对组件进行计算。否则就会出现 BUG，移位或者放大缩小方向不正确。因此，我们需要在组件未旋转的情况下对其进行计算。</p>
+<figure data-type="image" tabindex="7"><img src="https://panyu97py.github.io/post-images/1613502562307.png" alt="" loading="lazy"></figure>
+<p><strong>第四步</strong>，根据已知的旋转角度、新的组件中心点、当前鼠标实时坐标可以算出当前鼠标实时坐标 <code>currentPosition</code> 在未旋转时的坐标 <code>newTopLeftPoint</code>。同时也能根据已知的旋转角度、新的组件中心点、对称点算出组件对称点 <code>sPoint</code> 在未旋转时的坐标 <code>newBottomRightPoint</code>。<br>
+对应的计算公式如下：</p>
+<pre><code class="language-js">/**
+ * 计算根据圆心旋转后的点的坐标
+ * @param   {Object}  point  旋转前的点坐标
+ * @param   {Object}  center 旋转中心
+ * @param   {Number}  rotate 旋转的角度
+ * @return  {Object}         旋转后的坐标
+ * https://www.zhihu.com/question/67425734/answer/252724399 旋转矩阵公式
+ */
+export function calculateRotatedPointCoordinate(point, center, rotate) {
+    /**
+     * 旋转公式：
+     *  点a(x, y)
+     *  旋转中心c(x, y)
+     *  旋转后点n(x, y)
+     *  旋转角度θ                tan ??
+     * nx = cosθ * (ax - cx) - sinθ * (ay - cy) + cx
+     * ny = sinθ * (ax - cx) + cosθ * (ay - cy) + cy
+     */
+
+    return {
+        x: (point.x - center.x) * Math.cos(angleToRadian(rotate)) - (point.y - center.y) * Math.sin(angleToRadian(rotate)) + center.x,
+        y: (point.x - center.x) * Math.sin(angleToRadian(rotate)) + (point.y - center.y) * Math.cos(angleToRadian(rotate)) + center.y,
+    }
+}
+</code></pre>
+<p>上面的公式涉及到线性代数中旋转矩阵的知识，对于一个没上过大学的人来说，实在太难了。还好我从<a href="https://www.zhihu.com/question/67425734/answer/252724399">知乎上的一个回答</a>中找到了这一公式的推理过程，下面是回答的原文：</p>
+<figure data-type="image" tabindex="8"><img src="https://panyu97py.github.io/post-images/1613502683980.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="9"><img src="https://panyu97py.github.io/post-images/1613502701696.png" alt="" loading="lazy"></figure>
+<p>通过以上几个计算值，就可以得到组件新的位移值<code>top</code>、<code>left</code> 以及新的组件大小。对应的完整代码如下：</p>
+<pre><code class="language-js">function calculateLeftTop(style, curPositon, pointInfo) {
+    const { symmetricPoint } = pointInfo
+    const newCenterPoint = getCenterPoint(curPositon, symmetricPoint)
+    const newTopLeftPoint = calculateRotatedPointCoordinate(curPositon, newCenterPoint, -style.rotate)
+    const newBottomRightPoint = calculateRotatedPointCoordinate(symmetricPoint, newCenterPoint, -style.rotate)
+  
+    const newWidth = newBottomRightPoint.x - newTopLeftPoint.x
+    const newHeight = newBottomRightPoint.y - newTopLeftPoint.y
+    if (newWidth &gt; 0 &amp;&amp; newHeight &gt; 0) {
+        style.width = Math.round(newWidth)
+        style.height = Math.round(newHeight)
+        style.left = Math.round(newTopLeftPoint.x)
+        style.top = Math.round(newTopLeftPoint.y)
+    }
+}
+</code></pre>
+<p>现在再来看一下旋转后的放大缩小：</p>
+<figure data-type="image" tabindex="10"><img src="https://panyu97py.github.io/post-images/1613502785374.gif" alt="" loading="lazy"></figure>
+<h4 id="自动吸附">自动吸附</h4>
+<p>自动吸附是根据组件的四个属性 <code>top</code>、<code>left</code> 、<code>width</code> 、<code>height</code> 计算的，在将组件进行旋转后，这些属性的值是不会变的。所以无论组件旋转多少度，吸附时仍然按未旋转时计算。这样就会有一个问题，虽然实际上组件的 <code>top</code>、<code>left</code> 、<code>width</code> 、<code>height</code> 属性没有变化。但在外观上却发生了变化。下面是两个同样的组件：一个没旋转，一个旋转了 45 度。</p>
+<figure data-type="image" tabindex="11"><img src="https://panyu97py.github.io/post-images/1613502878822.png" alt="" loading="lazy"></figure>
+<p>可以看出来旋转后按钮的 <code>height</code> 属性和我们从外观上看到的高度是不一样的，所以在这种情况下就出现了吸附不正确的 BUG。</p>
+<figure data-type="image" tabindex="12"><img src="https://panyu97py.github.io/post-images/1613502923904.gif" alt="" loading="lazy"></figure>
+<h5 id="解决方案-2">解决方案</h5>
+<p>如何解决这个问题？我们需要拿组件旋转后的大小及位移来做吸附对比。也就是说不要拿组件实际的属性来对比，而是拿我们看到的大小和位移做对比。</p>
+<figure data-type="image" tabindex="13"><img src="https://panyu97py.github.io/post-images/1613502993620.png" alt="" loading="lazy"></figure>
+<p>从上图可以看出，旋转后的组件在 x 轴上的投射长度为两条红线长度之和。这两条红线的长度可以通过正弦和余弦算出，左边的红线用正弦计算，右边的红线用余弦计算：</p>
+<pre><code class="language-js">const newWidth = style.width * cos(style.rotate) + style.height * sin(style.rotate)
+</code></pre>
+<p>同理，高度也是一样：</p>
+<pre><code class="language-js">const newHeight = style.height * cos(style.rotate) + style.width * sin(style.rotate)
+</code></pre>
+<p>新的宽度和高度有了，再根据组件原有的 <code>top</code>、 <code>left</code> 属性，可以得出组件旋转后新的<code>top</code>、 <code>left</code>  属性。下面附上完整代码：</p>
+<pre><code class="language-js">translateComponentStyle(style) {
+    style = { ...style }
+    if (style.rotate != 0) {
+        const newWidth = style.width * cos(style.rotate) + style.height * sin(style.rotate)
+        const diffX = (style.width - newWidth) / 2
+        style.left += diffX
+        style.right = style.left + newWidth
+
+        const newHeight = style.height * cos(style.rotate) + style.width * sin(style.rotate)
+        const diffY = (newHeight - style.height) / 2
+        style.top -= diffY
+        style.bottom = style.top + newHeight
+
+        style.width = newWidth
+        style.height = newHeight
+    } else {
+        style.bottom = style.top + style.height
+        style.right = style.left + style.width
+    }
+
+    return style
+}
+</code></pre>
+<p>经过修复后，吸附也可以正常显示了</p>
+<figure data-type="image" tabindex="14"><img src="https://panyu97py.github.io/post-images/1613503143257.gif" alt="" loading="lazy"></figure>
+<h4 id="光标">光标</h4>
+<p>光标和可拖动的方向不对，是因为八个点的光标是固定设置的，没有随着角度变化而变化。</p>
+<figure data-type="image" tabindex="15"><img src="https://panyu97py.github.io/post-images/1613503197769.gif" alt="" loading="lazy"></figure>
+<h5 id="解决方案-3">解决方案</h5>
+<p>由于 <code>360 / 8 = 45</code>，所以可以为每一个方向分配 45 度的范围，每个范围对应一个光标。同时为每个方向设置一个初始角度，也就是未旋转时组件每个方向对应的角度。</p>
+<figure data-type="image" tabindex="16"><img src="https://panyu97py.github.io/post-images/1613503255637.png" alt="" loading="lazy"></figure>
+<pre><code class="language-js">pointList: ['lt', 't', 'rt', 'r', 'rb', 'b', 'lb', 'l'], // 八个方向
+initialAngle: { // 每个点对应的初始角度
+    lt: 0,
+    t: 45,
+    rt: 90,
+    r: 135,
+    rb: 180,
+    b: 225,
+    lb: 270,
+    l: 315,
+},
+angleToCursor: [ // 每个范围的角度对应的光标
+    { start: 338, end: 23, cursor: 'nw' },
+    { start: 23, end: 68, cursor: 'n' },
+    { start: 68, end: 113, cursor: 'ne' },
+    { start: 113, end: 158, cursor: 'e' },
+    { start: 158, end: 203, cursor: 'se' },
+    { start: 203, end: 248, cursor: 's' },
+    { start: 248, end: 293, cursor: 'sw' },
+    { start: 293, end: 338, cursor: 'w' },
+],
+cursors: {},
+</code></pre>
+<p>计算方式也很简单：</p>
+<ol>
+<li>假设现在组件已旋转了一定的角度 a。</li>
+<li>遍历八个方向，用每个方向的初始角度 + a 得出现在的角度 b。</li>
+<li>遍历 angleToCursor 数组，看看 b 在哪一个范围中，然后将对应的光标返回。</li>
+</ol>
+<p>经过上面三个步骤就可以计算出组件旋转后正确的光标方向。具体的代码如下：</p>
+<pre><code class="language-js">getCursor() {
+    const { angleToCursor, initialAngle, pointList, curComponent } = this
+    const rotate = (curComponent.style.rotate + 360) % 360 // 防止角度有负数，所以 + 360
+    const result = {}
+    let lastMatchIndex = -1 // 从上一个命中的角度的索引开始匹配下一个，降低时间复杂度
+    pointList.forEach(point =&gt; {
+        const angle = (initialAngle[point] + rotate) % 360
+        const len = angleToCursor.length
+        while (true) {
+            lastMatchIndex = (lastMatchIndex + 1) % len
+            const angleLimit = angleToCursor[lastMatchIndex]
+            if (angle &lt; 23 || angle &gt;= 338) {
+                result[point] = 'nw-resize'
+                return
+            }
+
+            if (angleLimit.start &lt;= angle &amp;&amp; angle &lt; angleLimit.end) {
+                result[point] = angleLimit.cursor + '-resize'
+                return
+            }
+        }
+    })
+
+    return result
+},
+</code></pre>
+<figure data-type="image" tabindex="17"><img src="https://panyu97py.github.io/post-images/1613503358536.gif" alt="" loading="lazy"></figure>
+<p>从上面的动图可以看出来，现在八个方向上的光标是可以正确显示的。</p>
+<h3 id="15-复制粘贴剪切">15. 复制粘贴剪切</h3>
+<p>相对于拖拽旋转功能，复制粘贴就比较简单了。</p>
+<pre><code class="language-js">const ctrlKey = 17, vKey = 86, cKey = 67, xKey = 88
+let isCtrlDown = false
+
+window.onkeydown = (e) =&gt; {
+    if (e.keyCode == ctrlKey) {
+        isCtrlDown = true
+    } else if (isCtrlDown &amp;&amp; e.keyCode == cKey) {
+        this.$store.commit('copy')
+    } else if (isCtrlDown &amp;&amp; e.keyCode == vKey) {
+        this.$store.commit('paste')
+    } else if (isCtrlDown &amp;&amp; e.keyCode == xKey) {
+        this.$store.commit('cut')
+    }
+}
+
+window.onkeyup = (e) =&gt; {
+    if (e.keyCode == ctrlKey) {
+        isCtrlDown = false
+    }
+}
+</code></pre>
+<p>监听用户的按键操作，在按下特定按键时触发对应的操作。</p>
+<h5 id="复制操作">复制操作</h5>
+<p>在 <code>vuex</code> 中使用 <code>copyData</code> 来表示复制的数据。当用户按下 <code>ctrl + c</code> 时，将当前组件数据深拷贝到 <code>copyData</code>。</p>
+<pre><code class="language-js">copy(state) {
+    state.copyData = {
+        data: deepCopy(state.curComponent),
+        index: state.curComponentIndex,
+    }
+},
+</code></pre>
+<p>同时需要将当前组件在组件数据中的索引记录起来，在剪切中要用到。</p>
+<h5 id="粘贴操作">粘贴操作</h5>
+<pre><code class="language-js">paste(state, isMouse) {
+    if (!state.copyData) {
+        toast('请选择组件')
+        return
+    }
+
+    const data = state.copyData.data
+
+    if (isMouse) {
+        data.style.top = state.menuTop
+        data.style.left = state.menuLeft
+    } else {
+        data.style.top += 10
+        data.style.left += 10
+    }
+
+    data.id = generateID()
+    store.commit('addComponent', { component: data })
+    store.commit('recordSnapshot')
+    state.copyData = null
+},
+</code></pre>
+<p>粘贴时，如果是按键操作 <code>ctrl+v</code>。则将组件的 <code>top</code>、<code>left</code> 属性加 10，以免和原来的组件重叠在一起。如果是使用鼠标右键执行粘贴操作，则将复制的组件放到鼠标点击处。</p>
+<h5 id="剪切操作">剪切操作</h5>
+<pre><code class="language-js">cut(state) {
+    if (!state.curComponent) {
+        toast('请选择组件')
+        return
+    }
+
+    if (state.copyData) {
+        store.commit('addComponent', { component: state.copyData.data, index: state.copyData.index })
+        if (state.curComponentIndex &gt;= state.copyData.index) {
+            // 如果当前组件索引大于等于插入索引，需要加一，因为当前组件往后移了一位
+            state.curComponentIndex++
+        }
+    }
+
+    store.commit('copy')
+    store.commit('deleteComponent')
+},
+</code></pre>
+<p>剪切操作本质上还是复制，只不过在执行复制后，需要将当前组件删除。为了避免用户执行剪切操作后，不执行粘贴操作，而是继续执行剪切。这时就需要将原先剪切的数据进行恢复。所以复制数据中记录的索引就起作用了，可以通过索引将原来的数据恢复到原来的位置中。</p>
+<h5 id="右键操作">右键操作</h5>
+<p>右键操作和按键操作是一样的，一个功能两种触发途径。</p>
+<pre><code class="language-js">&lt;li @click=&quot;copy&quot; v-show=&quot;curComponent&quot;&gt;复制&lt;/li&gt;
+&lt;li @click=&quot;paste&quot;&gt;粘贴&lt;/li&gt;
+&lt;li @click=&quot;cut&quot; v-show=&quot;curComponent&quot;&gt;剪切&lt;/li&gt;
+
+cut() {
+    this.$store.commit('cut')
+},
+
+copy() {
+    this.$store.commit('copy')
+},
+
+paste() {
+    this.$store.commit('paste', true)
+},
+</code></pre>
+<h3 id="16-数据交互">16. 数据交互</h3>
+<h4 id="方式一">方式一</h4>
+<p>提前写好一系列 <code>ajax</code> 请求<code>API</code>，点击组件时按需选择<code>API</code>，选好 <code>API</code> 再填参数。例如下面这个组件，就展示了如何使用 <code>ajax</code> 请求向后台交互：</p>
+<pre><code class="language-js">&lt;template&gt;
+    &lt;div&gt;{{ propValue.data }}&lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+export default {
+    // propValue: {
+    //     api: {
+    //             request: a,
+    //             params,
+    //      },
+    //     data: null
+    // }
+    props: {
+        propValue: {
+            type: Object,
+            default: () =&gt; {},
+        },
+    },
+    created() {
+        this.propValue.api.request(this.propValue.api.params).then(res =&gt; {
+            this.propValue.data = res.data
+        })
+    },
+}
+&lt;/script&gt;
+</code></pre>
+<h4 id="方式二">方式二</h4>
+<p>方式二适合纯展示的组件，例如有一个报警组件，可以根据后台传来的数据显示对应的颜色。在编辑页面的时候，可以通过 <code>ajax</code> 向后台请求页面能够使用的 <code>websocket</code> 数据：</p>
+<pre><code class="language-js">const data = ['status', 'text'...]
+</code></pre>
+<p>然后再为不同的组件添加上不同的属性。例如有 a 组件，它绑定的属性为 <code>status</code>。</p>
+<pre><code class="language-js">// 组件能接收的数据
+props: {
+    propValue: {
+        type: String,
+    },
+    element: {
+        type: Object,
+    },
+    wsKey: {
+        type: String,
+        default: '',
+    },
+},
+</code></pre>
+<p>在组件中通过 <code>wsKey</code> 获取这个绑定的属性。等页面发布后或者预览时，通过 <code>weboscket</code> 向后台请求全局数据放在 <code>vuex</code> 上。组件就可以通过 <code>wsKey</code> 访问数据了。</p>
+<pre><code class="language-js">&lt;template&gt;
+    &lt;div&gt;{{ wsData[wsKey] }}&lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+import { mapState } from 'vuex'
+
+export default {
+    props: {
+        propValue: {
+            type: String,
+        },
+        element: {
+            type: Object,
+        },
+        wsKey: {
+            type: String,
+            default: '',
+        },
+    },
+    computed: mapState([
+        'wsData',
+    ]),
+&lt;/script&gt;
+</code></pre>
+<p>和后台交互的方式有很多种，不仅仅包括上面两种，我在这里仅提供一些思路，以供参考。</p>
+<h3 id="17-发布">17. 发布</h3>
+<p>页面发布有两种方式：一是将组件数据渲染为一个单独的 HTML 页面；二是从本项目中抽取出一个最小运行时 runtime 作为一个单独的项目。<br>
+这里说一下第二种方式，本项目中的最小运行时其实就是预览页面加上自定义组件。将这些代码提取出来作为一个项目单独打包。发布页面时将组件数据以 JSON 的格式传给服务端，同时为每个页面生成一个唯一 ID。<br>
+假设现在有三个页面，发布页面生成的 ID 为 a、b、c。访问页面时只需要把 ID 带上，这样就可以根据 ID 获取每个页面对应的组件数据。</p>
+<pre><code>www.test.com/?id=a
+www.test.com/?id=c
+www.test.com/?id=b
+</code></pre>
+<h4 id="按需加载">按需加载</h4>
+<p>如果自定义组件过大，例如有数十个甚至上百个。这时可以将自定义组件用 import 的方式导入，做到按需加载，减少首屏渲染时间：</p>
+<pre><code class="language-js">import Vue from 'vue'
+
+const components = [
+    'Picture',
+    'VText',
+    'VButton',
+]
+
+components.forEach(key =&gt; {
+    Vue.component(key, () =&gt; import(`@/custom-component/${key}`))
+})
+</code></pre>
+<h4 id="按版本发布">按版本发布</h4>
+<p>自定义组件有可能会有更新的情况。例如原来的组件使用了大半年，现在有功能变更，为了不影响原来的页面。建议在发布时带上组件的版本号：</p>
+<pre><code>- v-text
+  - v1.vue
+  - v2.vue
+</code></pre>
+<p>例如 <code>v-text</code> 组件有两个版本，在左侧组件列表区使用时就可以带上版本号：</p>
+<pre><code class="language-js">{
+  component: 'v-text',
+  version: 'v1'
+  ...
+}
+</code></pre>
+<p>这样导入组件时就可以根据组件版本号进行导入：</p>
+<pre><code class="language-js">import Vue from 'vue'
+import componentList from '@/custom-component/component-list`
+
+componentList.forEach(component =&gt; {
+    Vue.component(component.name, () =&gt; import(`@/custom-component/${component.name}/${component.version}`))
+})
+</code></pre>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[可视化拖拽组件库一些技术要点原理分析（一）]]></title>
+        <id>https://panyu97py.github.io/post/gFf8ea3r7/</id>
+        <link href="https://panyu97py.github.io/post/gFf8ea3r7/">
+        </link>
+        <updated>2021-02-16T17:33:54.000Z</updated>
+        <content type="html"><![CDATA[<p>本文摘自<a href="https://juejin.cn/post/6908502083075325959">掘金</a>,写的很好抄录一下。建议多去给原作者点赞👍</p>
+<p>本文主要对以下技术要点进行分析：</p>
+<ol>
+<li>编辑器</li>
+<li>自定义组件</li>
+<li>拖拽</li>
+<li>删除组件、调整图层层级</li>
+<li>放大缩小</li>
+<li>撤消、重做</li>
+<li>组件属性设置</li>
+<li>吸附</li>
+<li>预览、保存代码</li>
+<li>绑定事件</li>
+<li>绑定动画</li>
+<li>导入 PSD</li>
+<li>手机模式</li>
+</ol>
+<p>为了让本文更加容易理解，我将以上技术要点结合在一起写了一个可视化拖拽组件库 DEMO：</p>
+<p><a href="https://github.com/woai3c/visual-drag-demo">github 项目地址</a></p>
+<p><a href="https://woai3c.github.io/visual-drag-demo/#/">在线预览</a></p>
+<p>建议结合源码一起阅读，效果更好（这个 DEMO 使用的是 Vue 技术栈）。</p>
+<h3 id="1-编辑器">1. 编辑器</h3>
+<p>先来看一下页面的整体结构。<br>
+<img src="https://panyu97py.github.io/post-images/1613497344188.png" alt="" loading="lazy"></p>
+<p>这一节要讲的编辑器其实就是中间的画布。它的作用是：当从左边组件列表拖拽出一个组件放到画布中时，画布要把这个组件渲染出来。<br>
+这个编辑器的实现思路是：</p>
+<p>用一个数组 <code>componentData</code> 维护编辑器中的数据。<br>
+把组件拖拽到画布中时，使用 <code>push()</code> 方法将新的组件数据添加到 <code>componentData</code>。<br>
+编辑器使用 <code>v-for</code> 指令遍历 <code>componentData</code>，将每个组件逐个渲染到画布（也可以使用 <code>JSX</code>语法结合 <code>render()</code> 方法代替）。</p>
+<p>编辑器渲染的核心代码如下所示：</p>
+<pre><code class="language-js">&lt;component 
+  v-for=&quot;item in componentData&quot;
+  :key=&quot;item.id&quot;
+  :is=&quot;item.component&quot;
+  :style=&quot;item.style&quot;
+  :propValue=&quot;item.propValue&quot;
+/&gt;
+</code></pre>
+<p>每个组件数据大概是这样：</p>
+<pre><code class="language-js">{
+    component: 'v-text', // 组件名称，需要提前注册到 Vue
+    label: '文字', // 左侧组件列表中显示的名字
+    propValue: '文字', // 组件所使用的值
+    icon: 'el-icon-edit', // 左侧组件列表中显示的名字
+    animations: [], // 动画列表
+    events: {}, // 事件列表
+    style: { // 组件样式
+        width: 200,
+        height: 33,
+        fontSize: 14,
+        fontWeight: 500,
+        lineHeight: '',
+        letterSpacing: 0,
+        textAlign: '',
+        color: '',
+    },
+}
+</code></pre>
+<p>在遍历 <code>componentData</code> 组件数据时，主要靠 <code>is</code> 属性来识别出真正要渲染的是哪个组件。<br>
+例如要渲染的组件数据是<code>{ component: 'v-text' }</code>，则 <code>&lt;component :is=&quot;item.component&quot; /&gt;</code>会被转换为 <code>&lt;v-text /&gt;</code>。当然，你这个组件也要提前注册到 Vue 中。<br>
+如果你想了解更多 is 属性的资料，请查看<a href="https://cn.vuejs.org/v2/api/#is">官方文档</a>。</p>
+<h3 id="2-自定义组件">2. 自定义组件</h3>
+<p>原则上使用第三方组件也是可以的，但建议你最好封装一下。不管是第三方组件还是自定义组件，每个组件所需的属性可能都不一样，所以每个组件数据可以暴露出一个属性 <code>propValue</code> 用于传递值。<br>
+例如 a 组件只需要一个属性，你的 <code>propValue</code> 可以这样写：<code>propValue: 'aaa'</code>。如果需要多个属性，<code>propValue</code> 则可以是一个对象：</p>
+<pre><code class="language-js">propValue: {
+  a: 1,
+  b: 'text'
+}
+</code></pre>
+<p>在这个 DEMO 组件库中我定义了三个组件。</p>
+<p>图片组件 Picture：</p>
+<pre><code class="language-js">&lt;template&gt;
+    &lt;div style=&quot;overflow: hidden&quot;&gt;
+        &lt;img :src=&quot;propValue&quot;&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+export default {
+    props: {
+        propValue: {
+            type: String,
+            require: true,
+        },
+    },
+}
+&lt;/script&gt;
+</code></pre>
+<p>按钮组件 <code>VButton</code>:</p>
+<pre><code class="language-js">&lt;template&gt;
+    &lt;button class=&quot;v-button&quot;&gt;{{ propValue }}&lt;/button&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+export default {
+    props: {
+        propValue: {
+            type: String,
+            default: '',
+        },
+    },
+}
+&lt;/script&gt;
+</code></pre>
+<p>文本组件 <code>VText</code>:</p>
+<pre><code class="language-js">&lt;template&gt;
+    &lt;textarea 
+        v-if=&quot;editMode == 'edit'&quot;
+        :value=&quot;propValue&quot;
+        class=&quot;text textarea&quot;
+        @input=&quot;handleInput&quot;
+        ref=&quot;v-text&quot;
+    &gt;&lt;/textarea&gt;
+    &lt;div v-else class=&quot;text disabled&quot;&gt;
+        &lt;div v-for=&quot;(text, index) in propValue.split('\n')&quot; :key=&quot;index&quot;&gt;{{ text }}&lt;/div&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+import { mapState } from 'vuex'
+
+export default {
+    props: {
+        propValue: {
+            type: String,
+        },
+        element: {
+            type: Object,
+        },
+    },
+    computed: mapState([
+        'editMode',
+    ]),
+    methods: {
+        handleInput(e) {
+            this.$emit('input', this.element, e.target.value)
+        },
+    },
+}
+&lt;/script&gt;
+</code></pre>
+<h3 id="3-拖拽">3. 拖拽</h3>
+<h4 id="从组件列表到画布">从组件列表到画布</h4>
+<p>一个元素如果要设为可拖拽，必须给它添加一个 <code>draggable</code> 属性。另外，在将组件列表中的组件拖拽到画布中，还有两个事件是起到关键作用的：</p>
+<p><code>dragstart</code> 事件，在拖拽刚开始时触发。它主要用于将拖拽的组件信息传递给画布。<br>
+<code>drop</code> 事件，在拖拽结束时触发。主要用于接收拖拽的组件信息。</p>
+<p>先来看一下左侧组件列表的代码：</p>
+<pre><code class="language-html">&lt;div @dragstart=&quot;handleDragStart&quot; class=&quot;component-list&quot;&gt;
+    &lt;div v-for=&quot;(item, index) in componentList&quot; :key=&quot;index&quot; class=&quot;list&quot; draggable :data-index=&quot;index&quot;&gt;
+        &lt;i :class=&quot;item.icon&quot;&gt;&lt;/i&gt;
+        &lt;span&gt;{{ item.label }}&lt;/span&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+<pre><code class="language-js">handleDragStart(e) {
+    e.dataTransfer.setData('index', e.target.dataset.index)
+}
+</code></pre>
+<p>可以看到给列表中的每一个组件都设置了 <code>draggable</code> 属性。另外，在触发 <code>dragstart</code>事件时，使用 <code>dataTransfer.setData()</code> 传输数据。再来看一下接收数据的代码：</p>
+<pre><code class="language-html">&lt;div class=&quot;content&quot; @drop=&quot;handleDrop&quot; @dragover=&quot;handleDragOver&quot; @click=&quot;deselectCurComponent&quot;&gt;
+    &lt;Editor /&gt;
+&lt;/div&gt;
+</code></pre>
+<pre><code class="language-js">handleDrop(e) {
+    e.preventDefault()
+    e.stopPropagation()
+    const component = deepCopy(componentList[e.dataTransfer.getData('index')])
+    this.$store.commit('addComponent', component)
+}
+</code></pre>
+<p>触发 <code>drop</code> 事件时，使用 <code>dataTransfer.getData()</code> 接收传输过来的索引数据，然后根据索引找到对应的组件数据，再添加到画布，从而渲染组件。<br>
+<img src="https://panyu97py.github.io/post-images/1613497886196.gif" alt="" loading="lazy"></p>
+<h4 id="组件在画布中移动">组件在画布中移动</h4>
+<p>首先需要将画布设为相对定位 <code>position: relative</code>，然后将每个组件设为绝对定位 <code>position: absolute</code>。除了这一点外，还要通过监听三个事件来进行移动：</p>
+<ol>
+<li><code>mousedown</code> 事件，在组件上按下鼠标时，记录组件当前的位置，即 xy 坐标（为了方便讲解，这里使用的坐标轴，实际上 xy 对应的是 css 中的 left 和 top。</li>
+<li><code>mousemove</code> 事件，每次鼠标移动时，都用当前最新的 xy 坐标减去最开始的 xy 坐标，从而计算出移动距离，再改变组件位置。</li>
+<li><code>mouseup</code> 事件，鼠标抬起时结束移动。</li>
+</ol>
+<pre><code class="language-js">handleMouseDown(e) {
+    e.stopPropagation()
+    this.$store.commit('setCurComponent', { component: this.element, zIndex: this.zIndex })
+
+    const pos = { ...this.defaultStyle }
+    const startY = e.clientY
+    const startX = e.clientX
+    // 如果直接修改属性，值的类型会变为字符串，所以要转为数值型
+    const startTop = Number(pos.top)
+    const startLeft = Number(pos.left)
+
+    const move = (moveEvent) =&gt; {
+        const currX = moveEvent.clientX
+        const currY = moveEvent.clientY
+        pos.top = currY - startY + startTop
+        pos.left = currX - startX + startLeft
+        // 修改当前组件样式
+        this.$store.commit('setShapeStyle', pos)
+    }
+
+    const up = () =&gt; {
+        document.removeEventListener('mousemove', move)
+        document.removeEventListener('mouseup', up)
+    }
+
+    document.addEventListener('mousemove', move)
+    document.addEventListener('mouseup', up)
+}
+</code></pre>
+<figure data-type="image" tabindex="1"><img src="https://panyu97py.github.io/post-images/1613498024998.gif" alt="" loading="lazy"></figure>
+<h3 id="4-删除组件-调整图层层级">4. 删除组件、调整图层层级</h3>
+<h4 id="改变图层层级">改变图层层级</h4>
+<p>由于拖拽组件到画布中是有先后顺序的，所以可以按照数据顺序来分配图层层级。<br>
+例如画布新增了五个组件 abcde，那它们在画布数据中的顺序为 <code>[a, b, c, d, e]</code>，图层层级和索引一一对应，即它们的 <code>z-index</code> 属性值是 01234（后来居上）。用代码表示如下：</p>
+<pre><code class="language-html">&lt;div v-for=&quot;(item, index) in componentData&quot; :zIndex=&quot;index&quot;&gt;&lt;/div&gt;
+</code></pre>
+<p>如果不了解 z-index 属性的，请看一下 <a href="https://developer.mozilla.org/zh-CN/docs/Web/CSS/z-index">MDN 文档</a>。</p>
+<p>理解了这一点之后，改变图层层级就很容易做到了。改变图层层级，即是改变组件数据在 <code>componentData</code>数组中的顺序。例如有<code>[a, b, c]</code>三个组件，它们的图层层级从低到高顺序为 abc（索引越大，层级越高）。<br>
+如果要将 b 组件上移，只需将它和 c 调换顺序即可：</p>
+<pre><code class="language-js">const temp = componentData[1]
+componentData[1] = componentData[2]
+componentData[2] = temp
+</code></pre>
+<p>同理，置顶置底也是一样，例如我要将 a 组件置顶，只需将 a 和最后一个组件调换顺序即可：</p>
+<pre><code class="language-js">const temp = componentData[0]
+componentData[0] = componentData[componentData.lenght - 1]
+componentData[componentData.lenght - 1] = temp
+</code></pre>
+<figure data-type="image" tabindex="2"><img src="https://panyu97py.github.io/post-images/1613498228508.gif" alt="" loading="lazy"></figure>
+<h4 id="删除组件">删除组件</h4>
+<p>删除组件非常简单，一行代码搞定：<code>componentData.splice(index, 1)</code>。<br>
+<img src="https://panyu97py.github.io/post-images/1613498335942.gif" alt="" loading="lazy"></p>
+<h3 id="5-放大缩小">5. 放大缩小</h3>
+<p>细心的网友可能会发现，点击画布上的组件时，组件上会出现 8 个小圆点。这 8 个小圆点就是用来放大缩小用的。实现原理如下：</p>
+<h4 id="1-在每个组件外面包一层-shape组件shape-组件里包含-8-个小圆点和一个-slot插槽用于放置组件">1. 在每个组件外面包一层 <code>Shape</code>组件，<code>Shape</code> 组件里包含 8 个小圆点和一个 <code>&lt;slot&gt;</code>插槽，用于放置组件。</h4>
+<pre><code class="language-html">&lt;!--页面组件列表展示--&gt;
+&lt;Shape v-for=&quot;(item, index) in componentData&quot;
+    :defaultStyle=&quot;item.style&quot;
+    :style=&quot;getShapeStyle(item.style, index)&quot;
+    :key=&quot;item.id&quot;
+    :active=&quot;item === curComponent&quot;
+    :element=&quot;item&quot;
+    :zIndex=&quot;index&quot;
+&gt;
+    &lt;component
+        class=&quot;component&quot;
+        :is=&quot;item.component&quot;
+        :style=&quot;getComponentStyle(item.style)&quot;
+        :propValue=&quot;item.propValue&quot;
+    /&gt;
+&lt;/Shape&gt;
+</code></pre>
+<p><code>Shape</code> 组件内部结构：</p>
+<pre><code class="language-html">&lt;template&gt;
+    &lt;div class=&quot;shape&quot; :class=&quot;{ active: this.active }&quot; @click=&quot;selectCurComponent&quot; @mousedown=&quot;handleMouseDown&quot;
+    @contextmenu=&quot;handleContextMenu&quot;&gt;
+        &lt;div
+            class=&quot;shape-point&quot;
+            v-for=&quot;(item, index) in (active? pointList : [])&quot;
+            @mousedown=&quot;handleMouseDownOnPoint(item)&quot;
+            :key=&quot;index&quot;
+            :style=&quot;getPointStyle(item)&quot;&gt;
+        &lt;/div&gt;
+        &lt;slot&gt;&lt;/slot&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+</code></pre>
+<h4 id="2-点击组件时将-8-个小圆点显示出来">2. 点击组件时，将 8 个小圆点显示出来。</h4>
+<p>起作用的是这行代码 <code>:active=&quot;item === curComponent&quot;</code>。</p>
+<h4 id="3-计算每个小圆点的位置">3. 计算每个小圆点的位置。</h4>
+<p>先来看一下计算小圆点位置的代码：</p>
+<pre><code class="language-js">const pointList = ['t', 'r', 'b', 'l', 'lt', 'rt', 'lb', 'rb']
+
+getPointStyle(point) {
+    const { width, height } = this.defaultStyle
+    const hasT = /t/.test(point)
+    const hasB = /b/.test(point)
+    const hasL = /l/.test(point)
+    const hasR = /r/.test(point)
+    let newLeft = 0
+    let newTop = 0
+
+    // 四个角的点
+    if (point.length === 2) {
+        newLeft = hasL? 0 : width
+        newTop = hasT? 0 : height
+    } else {
+        // 上下两点的点，宽度居中
+        if (hasT || hasB) {
+            newLeft = width / 2
+            newTop = hasT? 0 : height
+        }
+
+        // 左右两边的点，高度居中
+        if (hasL || hasR) {
+            newLeft = hasL? 0 : width
+            newTop = Math.floor(height / 2)
+        }
+    }
+
+    const style = {
+        marginLeft: hasR? '-4px' : '-3px',
+        marginTop: '-3px',
+        left: `${newLeft}px`,
+        top: `${newTop}px`,
+        cursor: point.split('').reverse().map(m =&gt; this.directionKey[m]).join('') + '-resize',
+    }
+
+    return style
+}
+
+</code></pre>
+<p>计算小圆点的位置需要获取一些信息：</p>
+<ul>
+<li>组件的高度 <code>height</code>、宽度 <code>width</code></li>
+</ul>
+<p>注意，小圆点也是绝对定位的，相对于 Shape 组件。所以有四个小圆点的位置很好确定：</p>
+<ol>
+<li>左上角的小圆点，坐标 <code>left: 0, top: 0</code></li>
+<li>右上角的小圆点，坐标 <code>left: width, top: 0</code></li>
+<li>左下角的小圆点，坐标 <code>left: 0, top: height</code></li>
+<li>右下角的小圆点，坐标 <code>left: width, top: height</code></li>
+</ol>
+<figure data-type="image" tabindex="3"><img src="https://panyu97py.github.io/post-images/1613498726273.png" alt="" loading="lazy"></figure>
+<p>另外的四个小圆点需要通过计算间接算出来。例如左边中间的小圆点，计算公式为 <code>left: 0, top: height / 2</code>，其他小圆点同理。</p>
+<figure data-type="image" tabindex="4"><img src="https://panyu97py.github.io/post-images/1613498761944.png" alt="" loading="lazy"></figure>
+<h4 id="4-点击小圆点时可以进行放大缩小操作">4. 点击小圆点时，可以进行放大缩小操作。</h4>
+<pre><code class="language-js">handleMouseDownOnPoint(point) {
+    const downEvent = window.event
+    downEvent.stopPropagation()
+    downEvent.preventDefault()
+
+    const pos = { ...this.defaultStyle }
+    const height = Number(pos.height)
+    const width = Number(pos.width)
+    const top = Number(pos.top)
+    const left = Number(pos.left)
+    const startX = downEvent.clientX
+    const startY = downEvent.clientY
+
+    // 是否需要保存快照
+    let needSave = false
+    const move = (moveEvent) =&gt; {
+        needSave = true
+        const currX = moveEvent.clientX
+        const currY = moveEvent.clientY
+        const disY = currY - startY
+        const disX = currX - startX
+        const hasT = /t/.test(point)
+        const hasB = /b/.test(point)
+        const hasL = /l/.test(point)
+        const hasR = /r/.test(point)
+        const newHeight = height + (hasT? -disY : hasB? disY : 0)
+        const newWidth = width + (hasL? -disX : hasR? disX : 0)
+        pos.height = newHeight &gt; 0? newHeight : 0
+        pos.width = newWidth &gt; 0? newWidth : 0
+        pos.left = left + (hasL? disX : 0)
+        pos.top = top + (hasT? disY : 0)
+        this.$store.commit('setShapeStyle', pos)
+    }
+
+    const up = () =&gt; {
+        document.removeEventListener('mousemove', move)
+        document.removeEventListener('mouseup', up)
+        needSave &amp;&amp; this.$store.commit('recordSnapshot')
+    }
+
+    document.addEventListener('mousemove', move)
+    document.addEventListener('mouseup', up)
+}
+</code></pre>
+<p>它的原理是这样的：</p>
+<ol>
+<li>点击小圆点时，记录点击的坐标 xy。</li>
+<li>假设我们现在向下拖动，那么 y 坐标就会增大。</li>
+<li>用新的 y 坐标减去原来的 y 坐标，就可以知道在纵轴方向的移动距离是多少。</li>
+<li>最后再将移动距离加上原来组件的高度，就可以得出新的组件高度。</li>
+<li>如果是正数，说明是往下拉，组件的高度在增加。如果是负数，说明是往上拉，组件的高度在减少。<br>
+<img src="https://panyu97py.github.io/post-images/1613498868658.gif" alt="" loading="lazy"></li>
+</ol>
+<h3 id="6-撤消-重做">6. 撤消、重做</h3>
+<p>撤销重做的实现原理其实挺简单的，先看一下代码：</p>
+<pre><code class="language-js">snapshotData: [], // 编辑器快照数据
+snapshotIndex: -1, // 快照索引
+        
+undo(state) {
+    if (state.snapshotIndex &gt;= 0) {
+        state.snapshotIndex--
+        store.commit('setComponentData', deepCopy(state.snapshotData[state.snapshotIndex]))
+    }
+},
+
+redo(state) {
+    if (state.snapshotIndex &lt; state.snapshotData.length - 1) {
+        state.snapshotIndex++
+        store.commit('setComponentData', deepCopy(state.snapshotData[state.snapshotIndex]))
+    }
+},
+
+setComponentData(state, componentData = []) {
+    Vue.set(state, 'componentData', componentData)
+},
+
+recordSnapshot(state) {
+    // 添加新的快照
+    state.snapshotData[++state.snapshotIndex] = deepCopy(state.componentData)
+    // 在 undo 过程中，添加新的快照时，要将它后面的快照清理掉
+    if (state.snapshotIndex &lt; state.snapshotData.length - 1) {
+        state.snapshotData = state.snapshotData.slice(0, state.snapshotIndex + 1)
+    }
+},
+</code></pre>
+<p>用一个数组来保存编辑器的快照数据。保存快照就是不停地执行 <code>push()</code> 操作，将当前的编辑器数据推入 <code>snapshotData</code> 数组，并增加快照索引 <code>snapshotIndex</code>。目前以下几个动作会触发保存快照操作：</p>
+<ol>
+<li>新增组件</li>
+<li>删除组件</li>
+<li>改变图层层级</li>
+<li>拖动组件结束时</li>
+</ol>
+<h4 id="撤销">撤销</h4>
+<p>假设现在 <code>snapshotData</code> 保存了 4 个快照。即 <code>[a, b, c, d]</code>，对应的快照索引为 3。如果这时进行了撤销操作，我们需要将快照索引减 1，然后将对应的快照数据赋值给画布。<br>
+例如当前画布数据是 d，进行撤销后，索引 -1，现在画布的数据是 c。</p>
+<h4 id="重做">重做</h4>
+<p>明白了撤销，那重做就很好理解了，就是将快照索引加 1，然后将对应的快照数据赋值给画布。<br>
+不过还有一点要注意，就是在撤销操作中进行了新的操作，要怎么办呢？有两种解决方案：</p>
+<ol>
+<li>新操作替换当前快照索引后面所有的数据。还是用刚才的数据 [a, b, c, d] 举例，假设现在进行了两次撤销操作，快照索引变为 1，对应的快照数据为 b，如果这时进行了新的操作，对应的快照数据为 e。那 e 会把 cd 顶掉，现在的快照数据为 [a, b, e]。</li>
+<li>不顶掉数据，在原来的快照中新增一条记录。用刚才的例子举例，e 不会把 cd 顶掉，而是在 cd 之前插入，即快照数据变为 [a, b, e, c, d]。</li>
+</ol>
+<p>我采用的是第一种方案。</p>
+<figure data-type="image" tabindex="5"><img src="https://panyu97py.github.io/post-images/1613499176409.gif" alt="" loading="lazy"></figure>
+<h3 id="7-吸附">7. 吸附</h3>
+<p>什么是吸附？就是在拖拽组件时，如果它和另一个组件的距离比较接近，就会自动吸附在一起。</p>
+<figure data-type="image" tabindex="6"><img src="https://panyu97py.github.io/post-images/1613499297871.gif" alt="" loading="lazy"></figure>
+<p>吸附的代码大概在 300 行左右，建议自己打开源码文件看（文件路径：<code>src\components\Editor\MarkLine.vue</code>）。这里不贴代码了，主要说说原理是怎么实现的。</p>
+<h4 id="标线">标线</h4>
+<p>在页面上创建 6 条线，分别是三横三竖。这 6 条线的作用是对齐，它们什么时候会出现呢？</p>
+<ol>
+<li>上下方向的两个组件左边、中间、右边对齐时会出现竖线</li>
+<li>左右方向的两个组件上边、中间、下边对齐时会出现横线</li>
+</ol>
+<p>具体的计算公式主要是根据每个组件的 xy 坐标和宽度高度进行计算的。例如要判断 ab 两个组件的左边是否对齐，则要知道它们每个组件的 x 坐标；如果要知道它们右边是否对齐，除了要知道 x 坐标，还要知道它们各自的宽度。</p>
+<pre><code class="language-js">// 左对齐的条件
+a.x == b.x
+
+// 右对齐的条件
+a.x + a.width == b.x + b.width
+
+</code></pre>
+<p>在对齐的时候，显示标线。</p>
+<p>另外还要判断 ab 两个组件是否“足够”近。如果足够近，就吸附在一起。是否足够近要靠一个变量来判断：</p>
+<pre><code class="language-js">diff: 3, // 相距 dff 像素将自动吸附
+</code></pre>
+<p>小于等于 <code>diff</code> 像素则自动吸附。</p>
+<h4 id="吸附">吸附</h4>
+<h5 id="吸附效果是怎么实现的呢">吸附效果是怎么实现的呢？</h5>
+<p>假设现在有 ab 组件，a 组件坐标 xy 都是 0，宽高都是 100。现在假设 a 组件不动，我们正在拖拽 b 组件。当把 b 组件拖到坐标为<code>x: 0, y: 103</code> 时，由于<code>103 - 100 &lt;= 3(diff)</code>，所以可以判定它们已经接近得足够近。这时需要手动将 b 组件的 y 坐标值设为 100，这样就将 ab 组件吸附在一起了。</p>
+<figure data-type="image" tabindex="7"><img src="https://panyu97py.github.io/post-images/1613499573207.gif" alt="" loading="lazy"></figure>
+<h4 id="优化">优化</h4>
+<p>在拖拽时如果 6 条标线都显示出来会不太美观。所以我们可以做一下优化，在纵横方向上最多只同时显示一条线。实现原理如下：</p>
+<ol>
+<li>a 组件在左边不动，我们拖着 b 组件往 a 组件靠近。</li>
+<li>这时它们最先对齐的是 a 的右边和 b 的左边，所以只需要一条线就够了。</li>
+<li>如果 ab 组件已经靠近，并且 b 组件继续往左边移动，这时就要判断它们俩的中间是否对齐。</li>
+<li>b 组件继续拖动，这时需要判断 a 组件的左边和 b 组件的右边是否对齐，也是只需要一条线。</li>
+</ol>
+<p>可以发现，关键的地方是我们要知道两个组件的方向。即 ab 两个组件靠近，我们要知道到底 b 是在 a 的左边还是右边。<br>
+这一点可以通过鼠标移动事件来判断，之前在讲解拖拽的时候说过，<code>mousedown</code> 事件触发时会记录起点坐标。所以每次触发 <code>mousemove</code> 事件时，用当前坐标减去原来的坐标，就可以判断组件方向。例如 x 方向上，如果 <code>b.x - a.x</code> 的差值为正，说明是 b 在 a 右边，否则为左边。</p>
+<pre><code class="language-js">// 触发元素移动事件，用于显示标线、吸附功能
+// 后面两个参数代表鼠标移动方向
+// currY - startY &gt; 0 true 表示向下移动 false 表示向上移动
+// currX - startX &gt; 0 true 表示向右移动 false 表示向左移动
+eventBus.$emit('move', this.$el, currY - startY &gt; 0, currX - startX &gt; 0)
+</code></pre>
+<figure data-type="image" tabindex="8"><img src="https://panyu97py.github.io/post-images/1613499714989.gif" alt="" loading="lazy"></figure>
+<h3 id="8-组件属性设置">8. 组件属性设置</h3>
+<p>每个组件都有一些通用属性和独有的属性，我们需要提供一个能显示和修改属性的地方。</p>
+<pre><code class="language-js">// 每个组件数据大概是这样
+{
+    component: 'v-text', // 组件名称，需要提前注册到 Vue
+    label: '文字', // 左侧组件列表中显示的名字
+    propValue: '文字', // 组件所使用的值
+    icon: 'el-icon-edit', // 左侧组件列表中显示的名字
+    animations: [], // 动画列表
+    events: {}, // 事件列表
+    style: { // 组件样式
+        width: 200,
+        height: 33,
+        fontSize: 14,
+        fontWeight: 500,
+        lineHeight: '',
+        letterSpacing: 0,
+        textAlign: '',
+        color: '',
+    },
+}
+</code></pre>
+<figure data-type="image" tabindex="9"><img src="https://panyu97py.github.io/post-images/1613499824580.png" alt="" loading="lazy"></figure>
+<p>我定义了一个 <code>AttrList</code> 组件，用于显示每个组件的属性。</p>
+<pre><code class="language-html">&lt;template&gt;
+    &lt;div class=&quot;attr-list&quot;&gt;
+        &lt;el-form&gt;
+            &lt;el-form-item v-for=&quot;(key, index) in styleKeys&quot; :key=&quot;index&quot; :label=&quot;map[key]&quot;&gt;
+                &lt;el-color-picker v-if=&quot;key == 'borderColor'&quot; v-model=&quot;curComponent.style[key]&quot;&gt;&lt;/el-color-picker&gt;
+                &lt;el-color-picker v-else-if=&quot;key == 'color'&quot; v-model=&quot;curComponent.style[key]&quot;&gt;&lt;/el-color-picker&gt;
+                &lt;el-color-picker v-else-if=&quot;key == 'backgroundColor'&quot; v-model=&quot;curComponent.style[key]&quot;&gt;&lt;/el-color-picker&gt;
+                &lt;el-select v-else-if=&quot;key == 'textAlign'&quot; v-model=&quot;curComponent.style[key]&quot;&gt;
+                    &lt;el-option
+                        v-for=&quot;item in options&quot;
+                        :key=&quot;item.value&quot;
+                        :label=&quot;item.label&quot;
+                        :value=&quot;item.value&quot;
+                    &gt;&lt;/el-option&gt;
+                &lt;/el-select&gt;
+                &lt;el-input type=&quot;number&quot; v-else v-model=&quot;curComponent.style[key]&quot; /&gt;
+            &lt;/el-form-item&gt;
+            &lt;el-form-item label=&quot;内容&quot; v-if=&quot;curComponent &amp;&amp; curComponent.propValue &amp;&amp; !excludes.includes(curComponent.component)&quot;&gt;
+                &lt;el-input type=&quot;textarea&quot; v-model=&quot;curComponent.propValue&quot; /&gt;
+            &lt;/el-form-item&gt;
+        &lt;/el-form&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+</code></pre>
+<p>代码逻辑很简单，就是遍历组件的 <code>style</code> 对象，将每一个属性遍历出来。并且需要根据具体的属性用不同的组件显示出来，例如颜色属性，需要用颜色选择器显示；数值类的属性需要用 <code>type=number</code>的 <code>input</code> 组件显示等等。<br>
+为了方便用户修改属性值，我使用 <code>v-model</code> 将组件和值绑定在一起。</p>
+<figure data-type="image" tabindex="10"><img src="https://panyu97py.github.io/post-images/1613499927469.gif" alt="" loading="lazy"></figure>
+<h3 id="9-预览-保存代码">9. 预览、保存代码</h3>
+<p>预览和编辑的渲染原理是一样的，区别是不需要编辑功能。所以只需要将原先渲染组件的代码稍微改一下就可以了。</p>
+<pre><code class="language-js">&lt;!--页面组件列表展示--&gt;
+&lt;Shape v-for=&quot;(item, index) in componentData&quot;
+    :defaultStyle=&quot;item.style&quot;
+    :style=&quot;getShapeStyle(item.style, index)&quot;
+    :key=&quot;item.id&quot;
+    :active=&quot;item === curComponent&quot;
+    :element=&quot;item&quot;
+    :zIndex=&quot;index&quot;
+&gt;
+    &lt;component
+        class=&quot;component&quot;
+        :is=&quot;item.component&quot;
+        :style=&quot;getComponentStyle(item.style)&quot;
+        :propValue=&quot;item.propValue&quot;
+    /&gt;
+&lt;/Shape&gt;
+</code></pre>
+<p>经过刚才的介绍，我们知道 <code>Shape</code> 组件具备了拖拽、放大缩小的功能。现在只需要将 <code>Shape</code> 组件去掉，外面改成套一个普通的 <code>DIV</code> 就可以了（其实不用这个<code>DIV</code> 也行，但为了绑定事件这个功能，所以需要加上）。</p>
+<pre><code class="language-html">&lt;!--页面组件列表展示--&gt;
+&lt;div v-for=&quot;(item, index) in componentData&quot; :key=&quot;item.id&quot;&gt;
+    &lt;component
+        class=&quot;component&quot;
+        :is=&quot;item.component&quot;
+        :style=&quot;getComponentStyle(item.style)&quot;
+        :propValue=&quot;item.propValue&quot;
+    /&gt;
+&lt;/div&gt;
+</code></pre>
+<p>保存代码的功能也特别简单，只需要保存画布上的数据 <code>componentData</code> 即可。保存有两种选择：</p>
+<ol>
+<li>保存到服务器</li>
+<li>本地保存<br>
+在 DEMO 上我使用的 localStorage 保存在本地。</li>
+</ol>
+<figure data-type="image" tabindex="11"><img src="https://panyu97py.github.io/post-images/1613500069119.gif" alt="" loading="lazy"></figure>
+<h3 id="10-绑定事件">10. 绑定事件</h3>
+<p>每个组件有一个 <code>events</code> 对象，用于存储绑定的事件。目前我只定义了两个事件：</p>
+<ol>
+<li>alert 事件</li>
+<li>redirect 事件</li>
+</ol>
+<pre><code class="language-js">// 编辑器自定义事件
+const events = {
+    redirect(url) {
+        if (url) {
+            window.location.href = url
+        }
+    },
+
+    alert(msg) {
+        if (msg) {
+            alert(msg)
+        }
+    },
+}
+
+const mixins = {
+    methods: events,
+}
+
+const eventList = [
+    {
+        key: 'redirect',
+        label: '跳转事件',
+        event: events.redirect,
+        param: '',
+    },
+    {
+        key: 'alert',
+        label: 'alert 事件',
+        event: events.alert,
+        param: '',
+    },
+]
+
+export {
+    mixins,
+    events,
+    eventList,
+}
+
+</code></pre>
+<p>不过不能在编辑的时候触发，可以在预览的时候触发。</p>
+<figure data-type="image" tabindex="12"><img src="https://panyu97py.github.io/post-images/1613500164656.gif" alt="" loading="lazy"></figure>
+<h4 id="添加事件">添加事件</h4>
+<p>通过 <code>v-for</code> 指令将事件列表渲染出来：</p>
+<pre><code class="language-html">&lt;el-tabs v-model=&quot;eventActiveName&quot;&gt;
+    &lt;el-tab-pane v-for=&quot;item in eventList&quot; :key=&quot;item.key&quot; :label=&quot;item.label&quot; :name=&quot;item.key&quot; style=&quot;padding: 0 20px&quot;&gt;
+        &lt;el-input v-if=&quot;item.key == 'redirect'&quot; v-model=&quot;item.param&quot; type=&quot;textarea&quot; placeholder=&quot;请输入完整的 URL&quot; /&gt;
+        &lt;el-input v-if=&quot;item.key == 'alert'&quot; v-model=&quot;item.param&quot; type=&quot;textarea&quot; placeholder=&quot;请输入要 alert 的内容&quot; /&gt;
+        &lt;el-button style=&quot;margin-top: 20px;&quot; @click=&quot;addEvent(item.key, item.param)&quot;&gt;确定&lt;/el-button&gt;
+    &lt;/el-tab-pane&gt;
+&lt;/el-tabs&gt;
+</code></pre>
+<p>选中事件时将事件添加到组件的 <code>events</code> 对象。</p>
+<h4 id="触发事件">触发事件</h4>
+<p>预览或真正渲染页面时，也需要在每个组件外面套一层 DIV，这样就可以在 DIV 上绑定一个点击事件，点击时触发我们刚才添加的事件。</p>
+<pre><code class="language-html">&lt;template&gt;
+    &lt;div @click=&quot;handleClick&quot;&gt;
+        &lt;component
+            class=&quot;conponent&quot;
+            :is=&quot;config.component&quot;
+            :style=&quot;getStyle(config.style)&quot;
+            :propValue=&quot;config.propValue&quot;
+        /&gt;
+    &lt;/div&gt;
+&lt;/template&gt;
+</code></pre>
+<pre><code class="language-js">handleClick() {
+    const events = this.config.events
+    // 循环触发绑定的事件
+    Object.keys(events).forEach(event =&gt; {
+        this[event](events[event])
+    })
+}
+</code></pre>
+<h3 id="11-绑定动画">11. 绑定动画</h3>
+<p>动画和事件的原理是一样的，先将所有的动画通过 <code>v-for</code>指令渲染出来，然后点击动画将对应的动画添加到组件的 <code>animations</code> 数组里。同事件一样，执行的时候也是遍历组件所有的动画并执行。</p>
+<p>为了方便，我们使用了 <a href="https://animate.style/"><code>animate.css</code> </a>动画库。</p>
+<pre><code class="language-js">// main.js
+import '@/styles/animate.css'
+</code></pre>
+<p>现在我们提前定义好所有的动画数据：</p>
+<pre><code class="language-js">export default [
+    {
+        label: '进入',
+        children: [
+            { label: '渐显', value: 'fadeIn' },
+            { label: '向右进入', value: 'fadeInLeft' },
+            { label: '向左进入', value: 'fadeInRight' },
+            { label: '向上进入', value: 'fadeInUp' },
+            { label: '向下进入', value: 'fadeInDown' },
+            { label: '向右长距进入', value: 'fadeInLeftBig' },
+            { label: '向左长距进入', value: 'fadeInRightBig' },
+            { label: '向上长距进入', value: 'fadeInUpBig' },
+            { label: '向下长距进入', value: 'fadeInDownBig' },
+            { label: '旋转进入', value: 'rotateIn' },
+            { label: '左顺时针旋转', value: 'rotateInDownLeft' },
+            { label: '右逆时针旋转', value: 'rotateInDownRight' },
+            { label: '左逆时针旋转', value: 'rotateInUpLeft' },
+            { label: '右逆时针旋转', value: 'rotateInUpRight' },
+            { label: '弹入', value: 'bounceIn' },
+            { label: '向右弹入', value: 'bounceInLeft' },
+            { label: '向左弹入', value: 'bounceInRight' },
+            { label: '向上弹入', value: 'bounceInUp' },
+            { label: '向下弹入', value: 'bounceInDown' },
+            { label: '光速从右进入', value: 'lightSpeedInRight' },
+            { label: '光速从左进入', value: 'lightSpeedInLeft' },
+            { label: '光速从右退出', value: 'lightSpeedOutRight' },
+            { label: '光速从左退出', value: 'lightSpeedOutLeft' },
+            { label: 'Y轴旋转', value: 'flip' },
+            { label: '中心X轴旋转', value: 'flipInX' },
+            { label: '中心Y轴旋转', value: 'flipInY' },
+            { label: '左长半径旋转', value: 'rollIn' },
+            { label: '由小变大进入', value: 'zoomIn' },
+            { label: '左变大进入', value: 'zoomInLeft' },
+            { label: '右变大进入', value: 'zoomInRight' },
+            { label: '向上变大进入', value: 'zoomInUp' },
+            { label: '向下变大进入', value: 'zoomInDown' },
+            { label: '向右滑动展开', value: 'slideInLeft' },
+            { label: '向左滑动展开', value: 'slideInRight' },
+            { label: '向上滑动展开', value: 'slideInUp' },
+            { label: '向下滑动展开', value: 'slideInDown' },
+        ],
+    },
+    {
+        label: '强调',
+        children: [
+            { label: '弹跳', value: 'bounce' },
+            { label: '闪烁', value: 'flash' },
+            { label: '放大缩小', value: 'pulse' },
+            { label: '放大缩小弹簧', value: 'rubberBand' },
+            { label: '左右晃动', value: 'headShake' },
+            { label: '左右扇形摇摆', value: 'swing' },
+            { label: '放大晃动缩小', value: 'tada' },
+            { label: '扇形摇摆', value: 'wobble' },
+            { label: '左右上下晃动', value: 'jello' },
+            { label: 'Y轴旋转', value: 'flip' },
+        ],
+    },
+    {
+        label: '退出',
+        children: [
+            { label: '渐隐', value: 'fadeOut' },
+            { label: '向左退出', value: 'fadeOutLeft' },
+            { label: '向右退出', value: 'fadeOutRight' },
+            { label: '向上退出', value: 'fadeOutUp' },
+            { label: '向下退出', value: 'fadeOutDown' },
+            { label: '向左长距退出', value: 'fadeOutLeftBig' },
+            { label: '向右长距退出', value: 'fadeOutRightBig' },
+            { label: '向上长距退出', value: 'fadeOutUpBig' },
+            { label: '向下长距退出', value: 'fadeOutDownBig' },
+            { label: '旋转退出', value: 'rotateOut' },
+            { label: '左顺时针旋转', value: 'rotateOutDownLeft' },
+            { label: '右逆时针旋转', value: 'rotateOutDownRight' },
+            { label: '左逆时针旋转', value: 'rotateOutUpLeft' },
+            { label: '右逆时针旋转', value: 'rotateOutUpRight' },
+            { label: '弹出', value: 'bounceOut' },
+            { label: '向左弹出', value: 'bounceOutLeft' },
+            { label: '向右弹出', value: 'bounceOutRight' },
+            { label: '向上弹出', value: 'bounceOutUp' },
+            { label: '向下弹出', value: 'bounceOutDown' },
+            { label: '中心X轴旋转', value: 'flipOutX' },
+            { label: '中心Y轴旋转', value: 'flipOutY' },
+            { label: '左长半径旋转', value: 'rollOut' },
+            { label: '由小变大退出', value: 'zoomOut' },
+            { label: '左变大退出', value: 'zoomOutLeft' },
+            { label: '右变大退出', value: 'zoomOutRight' },
+            { label: '向上变大退出', value: 'zoomOutUp' },
+            { label: '向下变大退出', value: 'zoomOutDown' },
+            { label: '向左滑动收起', value: 'slideOutLeft' },
+            { label: '向右滑动收起', value: 'slideOutRight' },
+            { label: '向上滑动收起', value: 'slideOutUp' },
+            { label: '向下滑动收起', value: 'slideOutDown' },
+        ],
+    },
+]
+</code></pre>
+<p>然后用<code>v-for</code>指令渲染出来动画列表。<br>
+<img src="https://panyu97py.github.io/post-images/1613500419330.gif" alt="" loading="lazy"></p>
+<h4 id="添加动画">添加动画</h4>
+<pre><code class="language-html">&lt;el-tabs v-model=&quot;animationActiveName&quot;&gt;
+    &lt;el-tab-pane v-for=&quot;item in animationClassData&quot; :key=&quot;item.label&quot; :label=&quot;item.label&quot; :name=&quot;item.label&quot;&gt;
+        &lt;el-scrollbar class=&quot;animate-container&quot;&gt;
+            &lt;div
+                class=&quot;animate&quot;
+                v-for=&quot;(animate, index) in item.children&quot;
+                :key=&quot;index&quot;
+                @mouseover=&quot;hoverPreviewAnimate = animate.value&quot;
+                @click=&quot;addAnimation(animate)&quot;
+            &gt;
+                &lt;div :class=&quot;[hoverPreviewAnimate === animate.value &amp;&amp; animate.value + ' animated']&quot;&gt;
+                    {{ animate.label }}
+                &lt;/div&gt;
+            &lt;/div&gt;
+        &lt;/el-scrollbar&gt;
+    &lt;/el-tab-pane&gt;
+&lt;/el-tabs&gt;
+</code></pre>
+<p>点击动画将调用 <code>addAnimation(animate)</code> 将动画添加到组件的 <code>animations</code> 数组。</p>
+<h4 id="触发动画">触发动画</h4>
+<p>运行动画的代码：</p>
+<pre><code class="language-js">export default async function runAnimation($el, animations = []) {
+    const play = (animation) =&gt; new Promise(resolve =&gt; {
+        $el.classList.add(animation.value, 'animated')
+        const removeAnimation = () =&gt; {
+            $el.removeEventListener('animationend', removeAnimation)
+            $el.removeEventListener('animationcancel', removeAnimation)
+            $el.classList.remove(animation.value, 'animated')
+            resolve()
+        }
+            
+        $el.addEventListener('animationend', removeAnimation)
+        $el.addEventListener('animationcancel', removeAnimation)
+    })
+
+    for (let i = 0, len = animations.length; i &lt; len; i++) {
+        await play(animations[i])
+    }
+}
+</code></pre>
+<p>运行动画需要两个参数：组件对应的 <code>DOM</code> 元素（在组件使用 <code>this.$el</code>获取）和它的动画数据 <code>animations</code>。并且需要监听 <code>animationend</code> 事件和 <code>animationcancel</code> 事件：一个是动画结束时触发，一个是动画意外终止时触发。<br>
+利用这一点再配合 <code>Promise</code> 一起使用，就可以逐个运行组件的每个动画了。</p>
+<h3 id="12-导入-psd">12. 导入 PSD</h3>
+<p>由于时间关系，这个功能我还没做。现在简单的描述一下怎么做这个功能。那就是使用 <a href="https://github.com/meltingice/psd.js#readme"><code>psd.js</code></a> 库，它可以解析 <code>PSD</code> 文件。</p>
+<p>使用 <code>psd.js</code> 库解析 <code>PSD</code> 文件得出的数据如下：</p>
+<pre><code class="language-js">{ children: 
+   [ { type: 'group',
+       visible: false,
+       opacity: 1,
+       blendingMode: 'normal',
+       name: 'Version D',
+       left: 0,
+       right: 900,
+       top: 0,
+       bottom: 600,
+       height: 600,
+       width: 900,
+       children: 
+        [ { type: 'layer',
+            visible: true,
+            opacity: 1,
+            blendingMode: 'normal',
+            name: 'Make a change and save.',
+            left: 275,
+            right: 636,
+            top: 435,
+            bottom: 466,
+            height: 31,
+            width: 361,
+            mask: {},
+            text: 
+             { value: 'Make a change and save.',
+               font: 
+                { name: 'HelveticaNeue-Light',
+                  sizes: [ 33 ],
+                  colors: [ [ 85, 96, 110, 255 ] ],
+                  alignment: [ 'center' ] },
+               left: 0,
+               top: 0,
+               right: 0,
+               bottom: 0,
+               transform: { xx: 1, xy: 0, yx: 0, yy: 1, tx: 456, ty: 459 } },
+            image: {} } ] } ],
+    document: 
+       { width: 900,
+         height: 600,
+         resources: 
+          { layerComps: 
+             [ { id: 692243163, name: 'Version A', capturedInfo: 1 },
+               { id: 725235304, name: 'Version B', capturedInfo: 1 },
+               { id: 730932877, name: 'Version C', capturedInfo: 1 } ],
+            guides: [],
+            slices: [] } } }
+
+</code></pre>
+<p>从以上代码可以发现，这些数据和 <code>css</code> 非常像。根据这一点，只需要写一个转换函数，将这些数据转换成我们组件所需的数据，就能实现 <code>PSD</code>文件转成渲染组件的功能。目前 <a href="https://github.com/huangwei9527/quark-h5"><code>quark-h5</code></a> 和 <a href="https://github.com/ly525/luban-h5"><code>luban-h5</code></a> 都是这样实现的 <code>PSD</code> 转换功能。</p>
+<h3 id="13-手机模式">13. 手机模式</h3>
+<p>由于画布是可以调整大小的，我们可以使用 iphone6 的分辨率来开发手机页面。</p>
+<figure data-type="image" tabindex="13"><img src="https://panyu97py.github.io/post-images/1613500731839.png" alt="" loading="lazy"></figure>
+<h3 id="总结">总结</h3>
+<p>由于 DEMO 的代码比较多，所以在讲解每一个功能点时，我只把关键代码贴上来。所以大家会发现 DEMO 的源码和我贴上来的代码会有些区别，请不必在意。</p>
+<p>另外，DEMO 的样式也比较简陋，主要是最近事情比较多，没太多时间写好看点，请见谅。</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[vue -- 事件总线 EventBus]]></title>
+        <id>https://panyu97py.github.io/post/xNPEyzRmb/</id>
+        <link href="https://panyu97py.github.io/post/xNPEyzRmb/">
+        </link>
+        <updated>2021-02-16T17:01:03.000Z</updated>
+        <content type="html"><![CDATA[<p>本文转自<a href="https://segmentfault.com/a/1190000021707081">segmentfault</a></p>
+<p>本文仅记录存在这种事件传递的方式，但不推崇。</p>
+<p><code>EventBus</code>又称为事件总线。在<code>Vue</code>中可以使用 <code>EventBus</code> 来作为组件传递数据的桥梁的，就像是所有组件共用相同的事件中心，可以向该中心注册发送事件或接收事件，所以组件都可以上下平行地通知其他组件，但也就是太方便所以若使用不慎，就会造成难以维护的灾难，因此才需要更完善的<code>Vuex</code>作为状态管理中心，将通知的概念上升到共享状态层次。</p>
+<blockquote>
+<p>官方推荐的状态管理方案是 <code>Vuex</code>。不过如果项目不是很大，状态管理也没有很复杂的话，使用 Vuex 没必要。</p>
+</blockquote>
+<h2 id="使用-eventbus">使用 EventBus</h2>
+<blockquote>
+<p>你需要做的只是引入 <code>Vue</code> 并导出它的一个实例（在这种情况下，我称它为 <code>EventBus</code> ）。实质上它是一个不具备 <code>DOM</code> 的组件，它具有的仅仅只是它实例方法而已，因此它非常的轻便。</p>
+</blockquote>
+<h3 id="初始化">初始化</h3>
+<ul>
+<li>第一种方式: 可以在 <code>main.js</code>中，初始化 <code>EventBus</code></li>
+</ul>
+<pre><code>Vue.prototype.$EventBus = new Vue()
+</code></pre>
+<ul>
+<li>第二种方式: 创建一个 <code>Bus.js</code>,再创建事件总线并将其导出，以便其它模块可以使用或者监听它</li>
+</ul>
+<pre><code>// Bus.js
+import Vue from 'vue'
+export const EventBus = new Vue();
+</code></pre>
+<p>现在我们已经创建了 <code>EventBus</code> ，接下来你需要做到的就是在你的组件中加载它，并且调用同一个方法，就如你在父子组件中互相传递消息一样。</p>
+<h3 id="发送和接受事件">发送和接受事件</h3>
+<p>其实和 父子组件的通信差不多,用 <code>EventBus.$emit('eventName',data)</code>发送， <code>EventBus.$on(&quot;eventName&quot;, callback(payload1,…))</code> 接受</p>
+<p>现在假设 A 组件与 B 组件通信</p>
+<pre><code>&lt;!-- A.vue --&gt;
+&lt;template&gt;
+    &lt;p&gt;{{msgB}}&lt;/p&gt;
+    &lt;button @click=&quot;sendMsgA()&quot;&gt;-&lt;/button&gt;
+&lt;/template&gt;
+
+&lt;script&gt; 
+import { EventBus } from &quot;../Bus.js&quot;;
+export default {
+    data(){
+        return {
+        msg: ''
+        }
+    },
+    mounted() {
+        EventBus.$on(&quot;bMsg&quot;, (msg) =&gt; {
+            // a组件接受 b发送来的消息
+            this.msg = msg;
+        });
+    },
+    methods: {
+        sendMsgA() {
+            EventBus.$emit(&quot;aMsg&quot;, '来自A页面的消息'); // a 发送数据
+        }
+    }
+}; 
+&lt;/script&gt;
+
+
+&lt;!-- B.vue --&gt;
+&lt;template&gt;
+  &lt;p&gt;{{msgA}}&lt;/p&gt;
+    &lt;button @click=&quot;sendMsgB()&quot;&gt;-&lt;/button&gt;
+&lt;/template&gt;
+
+&lt;script&gt; 
+import { EventBus } from &quot;../event-bus.js&quot;;
+export default {
+    data(){
+        return {
+        msg: ''
+        }
+    },
+    mounted() {
+        EventBus.$on(&quot;aMsg&quot;, (msg) =&gt; {
+            // b组件接受 a发送来的消息
+            this.msg = msg;
+        });
+    },
+    methods: {
+        sendMsgB() {
+            EventBus.$emit(&quot;bMsg&quot;, '来自b页面的消息'); // b发送数据
+        }
+    }
+};
+&lt;/script&gt;
+</code></pre>
+<p>如果只监听(接受)一次数据可以使用 <code>EventBus.$once('eventName', callback(payload1,…)</code></p>
+<h3 id="移除移除事件监听者">移除移除事件监听者</h3>
+<ul>
+<li>移除单个事件监听 <code>EventBus.$off('eventName', callback)</code></li>
+<li>移除全部事件监听 <code>EventBus.$off()</code></li>
+</ul>
+<pre><code>// 导入我们刚刚创建的 EventBus
+import { EventBus } from '../Bus.js'
+
+// 事件监听函数
+const clickHandler = function(clickCount) {
+  console.log(`Oh, hello)`)
+}
+
+// 开始监听事件
+EventBus.$on('i-got-clicked', clickHandler);
+
+// 停止监听
+EventBus.$off('i-got-clicked', clickHandler);
+
+</code></pre>
+<h2 id="全局eventbus">全局<code>EventBus</code></h2>
+<p>全局<code>EventBus</code>，虽然在某些示例中不提倡使用，但它是一种非常漂亮且简单的方法，可以跨组件之间共享数据。</p>
+<p>它的工作原理是发布/订阅方法，通常称为 <code>Pub</code>/<code>Sub</code> 。</p>
+<p>由于是全局的，必然所有事件都订阅它, 所有组件也发布到它，订阅组件获得更新。也就是说所有组件都能够将事件发布到总线，然后总线由另一个组件订阅，然后订阅它的组件将得到更新。</p>
+<h3 id="创建全局eventbus">创建全局<code>EventBus</code></h3>
+<p>全局事件总线只不过是一个简单的<code>vue</code> 组件。</p>
+<pre><code>var EventBus = new Vue();
+
+Object.defineProperties(Vue.prototype, {
+  $bus: {
+    get: function () {
+      return EventBus
+    }
+  }
+})
+// 这个初始化的第一种方法，个人感觉区别不大
+</code></pre>
+<h3 id="使用-on和emit">使用 <code>$on</code>和<code>$emit</code></h3>
+<p>在这个特定的总线中使用两个方法。一个用于创建发出的事件，它就是<code>$emit</code>；另一个用于订阅<code>$emit</code>,并接收参数执行回调，它就是<code>$on</code>：</p>
+<pre><code>this.$bus.$emit('nameOfEvent',{ ... pass some event data ...});
+
+this.$bus.$on('nameOfEvent',($event) =&gt; {
+    // ...
+})
+</code></pre>
+<h2 id="eventbus的优缺点">EventBus的优缺点</h2>
+<h3 id="缺点">缺点</h3>
+<ul>
+<li>大家都知道vue是单页应用，如果你在某一个页面刷新了之后，与之相关的EventBus会被移除，这样就导致业务走不下去。</li>
+<li>如果业务有反复操作的页面，EventBus在监听的时候就会触发很多次，也是一个非常大的隐患。这时候我们就需要好好处理EventBus在项目中的关系。通常会用到，在vue页面销毁时，同时移除EventBus事件监听。</li>
+<li>由于是都使用一个Vue实例，所以容易出现重复触发的情景，两个页面都定义了同一个事件名，并且没有用$off销毁（常出现在路由切换时）。</li>
+</ul>
+<h3 id="优点">优点</h3>
+<ul>
+<li>解决了多层组件之间繁琐的事件传播。</li>
+<li>使用原理十分简单，代码量少。</li>
+</ul>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[ios css border-radius元素 overflow:hidden失效问题]]></title>
+        <id>https://panyu97py.github.io/post/VnrVXCKIi/</id>
+        <link href="https://panyu97py.github.io/post/VnrVXCKIi/">
+        </link>
+        <updated>2021-02-16T16:49:36.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="问题">问题</h2>
+<p>父级设置圆角属性失效 父元素使用border-radius和overflow:hidden做成圆形，子元素如果使用了transform属性，则父元素的overflow:hidden会失效。</p>
+<h2 id="解决">解决</h2>
+<pre><code>-webkit-backface-visibility: hidden;
+-webkit-transform: translate3d(0, 0, 0);
+</code></pre>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[Xcode 10 中关于 Error: Multiple commands produce]]></title>
+        <id>https://panyu97py.github.io/post/AVegNSKtq/</id>
+        <link href="https://panyu97py.github.io/post/AVegNSKtq/">
+        </link>
+        <updated>2021-02-16T16:45:43.000Z</updated>
+        <content type="html"><![CDATA[<p>本文摘自<a href="https://www.jianshu.com/p/fdb1421f3c8b">简书</a></p>
+<p>更新<code>Xcode 10</code>，自然开始第一时间运行老项目，踩坑填坑</p>
+<h3 id="这边记录下基本出现的问题">这边记录下基本出现的问题</h3>
+<blockquote>
+<p><code>Error: Multiple commands produce</code></p>
+</blockquote>
+<p>Xcode 10 与本问题相关的一个更新点。</p>
+<blockquote>
+<p>Build System<br>
+Again, Xcode 10 uses a new build system. The new build system provides improved reliability and build performance, and it catches project configuration problems that the legacy build system does not.<br>
+The legacy build system is still available in Xcode 10. To use the legacy build system, select it in the File &gt; Project/Workspace Settings sheet. Projects configured to use the legacy build system will display an orange hammer icon in the Activity View.</p>
+</blockquote>
+<p>简单而言，<code>Xcode10</code>使用了一个的新创建系统，比之前的提供更好的可靠性与创建性能，而且可以获取项目配置问题（默认设置新创建系统）</p>
+<p>在苹果文档中，提及<code>Xcode10</code>中的关于旧项目<code>New Build System</code>更改适配中提及到以下两点</p>
+<ul>
+<li>
+<p>The new build system has stricter checks for cycles between elements in the build in order to prevent unnecessary rebuilds.</p>
+</li>
+<li>
+<p>It is an error for any individual file in the build to be produced by more than one build command. For example, if two targets each declare the same output file from a shell script phase, factor out the declaration of the output file into a single target.</p>
+</li>
+</ul>
+<p><code>New Build System</code>会对构建中的元素循环进行严格的检查，避免不必要的重建，这个也是错误出现的原因。</p>
+<h3 id="错误发生的两种普遍形式">错误发生的两种普遍形式：</h3>
+<h4 id="1-infoplist">1. <code>info.plist</code></h4>
+<blockquote>
+<p>错误信息</p>
+</blockquote>
+<pre><code>Multiple commands produce '/Users/tjsoft/Library/Developer/Xcode/DerivedData/TYKYTwoLearnOneDo-amcfzswumxdotlgjwdslugmywxch/Build/Products/Debug-iphoneos/TYKYTwoLearnOneDo.app/Info.plist':
+1) Target 'TYKYTwoLearnOneDo' (project 'TYKYTwoLearnOneDo') has copy command from '/Users/tjsoft/TYKY /党建/黔纪/QianJiDangJian_iOS/TYKYTwoLearnOneDo/Info.plist' to '/Users/tjsoft/Library/Developer/Xcode/DerivedData/TYKYTwoLearnOneDo-amcfzswumxdotlgjwdslugmywxch/Build/Products/Debug-iphoneos/TYKYTwoLearnOneDo.app/Info.plist'
+2) Target 'TYKYTwoLearnOneDo' (project 'TYKYTwoLearnOneDo') has process command with output '/Users/tjsoft/Library/Developer/Xcode/DerivedData/TYKYTwoLearnOneDo-amcfzswumxdotlgjwdslugmywxch/Build/Products/Debug-iphoneos/TYKYTwoLearnOneDo.app/Info.plist'
+</code></pre>
+<h4 id="2-copy-pods-resources">2. <code>Copy Pods Resources</code></h4>
+<blockquote>
+<p>错误信息</p>
+</blockquote>
+<pre><code>Multiple commands produce '/Users/tjsoft/Library/Developer/Xcode/DerivedData/TYKYTwoLearnOneDo-amcfzswumxdotlgjwdslugmywxch/Build/Products/Debug-iphoneos/TYKYTwoLearnOneDo.app':
+1) Target 'TYKYTwoLearnOneDo' has create directory command with output '/Users/tjsoft/Library/Developer/Xcode/DerivedData/TYKYTwoLearnOneDo-amcfzswumxdotlgjwdslugmywxch/Build/Products/Debug-iphoneos/TYKYTwoLearnOneDo.app'
+2) That command depends on command in Target 'TYKYTwoLearnOneDo': script phase “[CP] Copy Pods Resources”
+</code></pre>
+<h3 id="解决方法可以有两种">解决方法可以有两种:</h3>
+<h4 id="1-一种是不使用new-build-system在file-projectworkspace-settings中的share-projectworkspace-settings里build-system将new-build-systemdefault切换成legacy-build-system">1. 一种是不使用<code>New Build System</code>，在<code>File</code> &gt; <code>Project/Workspace Settings</code>中的<code>Share Project/Workspace Settings</code>里<code>build system</code>将<code>New Build System(Default)</code>切换成<code>Legacy build system</code>。</h4>
+<figure data-type="image" tabindex="1"><img src="https://panyu97py.github.io/post-images/1613494079991.png" alt="" loading="lazy"></figure>
+<h4 id="其次是根据出错信息在新创建系统模式下去除多余的引用重建">其次是根据出错信息，在新创建系统模式下，去除多余的引用重建。</h4>
+<h5 id="1-infoplist-2">1. Info.plist</h5>
+<p>在 <code>target</code> -&gt; <code>Build phase</code> &gt; <code>Copy Bundle Resource</code> 中找到<code>info.plist</code>，移除</p>
+<figure data-type="image" tabindex="2"><img src="https://panyu97py.github.io/post-images/1613494034862.png" alt="" loading="lazy"></figure>
+<h5 id="2-copy-pods-resources-2">2. Copy Pods Resources</h5>
+<p>在 <code>target</code> -&gt; <code>Build phase</code> -&gt; <code>Copy Pods Resources</code> -&gt; <code>Output Files</code>，移除<code>${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}</code></p>
+<figure data-type="image" tabindex="3"><img src="https://panyu97py.github.io/post-images/1613494090242.png" alt="" loading="lazy"></figure>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[寻找两个正序数组的中位数]]></title>
+        <id>https://panyu97py.github.io/post/d6wdVAP5_/</id>
+        <link href="https://panyu97py.github.io/post/d6wdVAP5_/">
+        </link>
+        <updated>2021-02-16T16:44:09.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="题目描述">题目描述</h3>
+<p>给定两个大小为 <code>m</code> 和 <code>n</code> 的正序（从小到大）数组 <code>nums1</code> 和 <code>nums2</code>。</p>
+<p>请你找出这两个正序数组的中位数，并且要求算法的时间复杂度为<code>O(log(m + n))</code>。</p>
+<p>你可以假设 <code>nums1</code> 和 <code>nums2</code> 不会同时为空。</p>
+<p></p>
+<h4 id="示例1">示例1</h4>
+<pre><code>nums1 = [1, 3]
+nums2 = [2]
+
+则中位数是 2.0
+</code></pre>
+<h4 id="示例-2">示例 2</h4>
+<pre><code>nums1 = [1, 2]
+nums2 = [3, 4]
+
+则中位数是 (2 + 3)/2 = 2.5
+</code></pre>
+<h4 id="题解">题解</h4>
+<h5 id="题解一暴力解法">题解一：暴力解法</h5>
+<h6 id="思路">思路</h6>
+<p>根据题目描述及示例我们可以知道，用 len 表示合并后数组的长度如果是奇数，我们需要知道第 <code>（len+1）/2</code> 个数就可以了，如果遍历的话需要遍历 <code>Math.floor(len/2 ) + 1</code> 次。如果是偶数，我们需要知道第 <code>len/2</code>和 <code>len/2+1</code> 个数的值，也是需要遍历 <code>len/2+1</code> 次。所以遍历的话，奇数和偶数都是 <code>len/2+1</code> 次。</p>
+<p>即：</p>
+<ul>
+<li>若<code>len%2===1</code>中位数就是位于合并后数组<code>Math.floor(len/2)+1</code>的数字。</li>
+<li>若<code>(m+n)%2===0</code>中位数就是位于合并后数组<code>len/2</code>和<code>len/2+1</code>的数字的平均数。<br>
+所以我们需要做的就是排序就可以了,这里我们采用指针法排序这样最多只需要移动<code>len/2+1</code>就能获得答案。<br>
+时间复杂度：遍历 <code>len/2+1</code> 次，<code>len=m+n</code>，所以时间复杂度是 <code>O(m+n)</code>。</li>
+</ul>
+<p>空间复杂度：我们申请了常数个变量，也就是<code>m</code>，<code>n</code>，<code>len</code>，<code>pointer1</code>，<code>pointer2</code>，<code>newVal</code>，<code>oldVal</code> 以及 <code>i</code>。</p>
+<p>总共 8 个变量，所以空间复杂度是 <code>O(1)</code>。</p>
+<p>但这并不符合题目中要求的时间复杂度<code>O(log(m + n))</code></p>
+<h6 id="代码">代码</h6>
+<pre><code>/**
+ * @param {number[]} nums1
+ * @param {number[]} nums2
+ * @return {number}
+ */
+var findMedianSortedArrays = function (nums1, nums2) {
+    let m = nums1.length
+    let n = nums2.length
+    let len = m + n
+    let pointer1 = 0, pointer2 = 0
+    let newVal, oldVal
+    for (let i = 0; i &lt;= len / 2; i++) {
+        oldVal = newVal
+        if (pointer1 &lt; m &amp;&amp; (nums1[pointer1] &lt;= nums2[pointer2] || pointer2 &gt;= n)) {
+            newVal = nums1[pointer1++]
+        } else {
+            newVal = nums2[pointer2++]
+        }
+    }
+    if ((len % 2) === 0) {
+        return (newVal + oldVal) / 2
+    } else {
+        return newVal
+    }
+};
+</code></pre>
+<h5 id="题解二二分法">题解二：二分法</h5>
+<p>未完待续。。。</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[两数之和]]></title>
+        <id>https://panyu97py.github.io/post/05Y8j1Evg/</id>
+        <link href="https://panyu97py.github.io/post/05Y8j1Evg/">
+        </link>
+        <updated>2021-02-16T16:43:37.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="题目描述">题目描述</h3>
+<p>给定一个整数数组 <code>nums</code> 和一个目标值 <code>target</code>，请你在该数组中找出和为目标值的那 两个 整数，并返回他们的数组下标。</p>
+<p>你可以假设每种输入只会对应一个答案。但是，数组中同一个元素不能使用两遍。</p>
+<h4 id="示例">示例</h4>
+<pre><code>给定 nums = [2, 7, 11, 15], target = 9
+
+因为 nums[0] + nums[1] = 2 + 7 = 9
+所以返回 [0, 1]
+</code></pre>
+<h3 id="题解">题解</h3>
+<h4 id="方法一暴力解法">方法一：暴力解法</h4>
+<h5 id="思路">思路：</h5>
+<p>看到题目后最先想到的就是两个循环嵌套，遍历每个元素<code>x</code>，并查找是否存在一个目标元素与<code>x</code>相加等于<code>target</code></p>
+<blockquote>
+<p>时间复杂度：O(n^2)<br>
+空间复杂度：O(1)</p>
+</blockquote>
+<pre><code>var twoSum = function(nums, target) {
+for (let i = 0; i &lt; nums.length; i++) {
+        for (let j = i + 1; j &lt; nums.length; j++) {
+            if (nums[i] + nums[j]= target) {
+                return [i, j];
+            }
+        }
+    }
+};
+</code></pre>
+<h4 id="方法二两遍哈希表">方法二：两遍哈希表</h4>
+<h5 id="思路-2">思路：</h5>
+<p>为了对运行时间复杂度进行优化，我们可以使用哈希表。一个简单的实现使用了两次迭代。在第一次迭代中，我们将每个元素的值和它的索引添加到表中。然后，在第二次迭代中，我们将检查每个元素所对应的目标元素 <code>target - nums[i]</code> 是否存在于表中。注意，该目标元素不能是 <code>nums[i]</code> 本身！</p>
+<blockquote>
+<p>时间复杂度：O(n)<br>
+空间复杂度：O(n)</p>
+</blockquote>
+<pre><code>var twoSum = function(nums, target) {
+    // 构造哈希表
+    var map = new Map();
+    for (let i = 0; i &lt; nums.length; i++) {
+        //将数据作为map的key，数据的位置作为map的值（由于题目中提到每种输入只会对应一个答案，即数组中不存在重复的元素）
+        map.set(nums[i], i);
+    }
+    for (let j = 0; j &lt; nums.length; j++) {
+        let complement = target - nums[j];
+        if (map.has(complement) &amp;&amp; map.get(complement) !== j) {
+            return [j, map.get(complement)];
+        }
+    }
+    console.log(&quot;No two sum solution&quot;);
+};
+
+</code></pre>
+<h4 id="方法三一遍哈希表">方法三：一遍哈希表</h4>
+<h5 id="思路-3">思路：</h5>
+<p>其实我们可以通过一遍哈希表完成查找，在进行迭代并将元素插入到表中的同时，我们还会回过头来检查表中是否已经存在当前元素所对应的目标元素。如果它存在，那我们已经找到了对应解，并立即将其返回。</p>
+<blockquote>
+<p>时间复杂度：O(n)<br>
+空间复杂度：O(n)</p>
+</blockquote>
+<pre><code>var twoSum = function(nums, target) {
+    let targetMap = new Map()
+    for(let i = 0;i&lt;nums.length;i++){
+        let a = target - nums[i]
+        if(targetMap.has(a)){
+            return [targetMap.get(a),i]
+        }
+        targetMap.set(nums[i],i)
+    }
+};
+</code></pre>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[无重复字符的最长字串]]></title>
+        <id>https://panyu97py.github.io/post/SVgfv_u3l/</id>
+        <link href="https://panyu97py.github.io/post/SVgfv_u3l/">
+        </link>
+        <updated>2021-02-16T16:28:38.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="题目描述">题目描述</h3>
+<p>给定一个字符串，请你找出其中不含有重复字符的 最长子串 的长度。</p>
+<h4 id="示例1">示例1</h4>
+<pre><code>输入: &quot;abcabcbb&quot;
+输出: 3 
+解释: 因为无重复字符的最长子串是 &quot;abc&quot;，所以其长度为 3。
+</code></pre>
+<h4 id="示例2">示例2</h4>
+<pre><code>输入: &quot;bbbbb&quot;
+输出: 1
+解释: 因为无重复字符的最长子串是 &quot;b&quot;，所以其长度为 1。
+</code></pre>
+<h4 id="示例-3">示例 3</h4>
+<pre><code>输入: &quot;pwwkew&quot;
+输出: 3
+解释: 因为无重复字符的最长子串是 &quot;wke&quot;，所以其长度为 3。
+     请注意，你的答案必须是 子串 的长度，&quot;pwke&quot; 是一个子序列，不是子串。
+</code></pre>
+<h3 id="题解">题解</h3>
+<h4 id="官方题解">官方题解</h4>
+<h5 id="思路">思路</h5>
+<p><img src="https://panyu97py.github.io/post-images/1613493014542.png" alt="" loading="lazy"><br>
+如上图所示相当于左右两个指针对字符串各循环了一次</p>
+<h5 id="代码">代码</h5>
+<pre><code>var lengthOfLongestSubstring = function(s) {
+    // 哈希集合，记录每个字符是否出现过
+    const occ = new Set();
+    const n = s.length;
+    // 右指针，初始值为 -1，相当于我们在字符串的左边界的左侧，还没有开始移动
+    let rk = -1, ans = 0;
+    for (let i = 0; i &lt; n; ++i) {
+        if (i != 0) {
+            // 左指针向右移动一格，移除一个字符
+            occ.delete(s.charAt(i - 1));
+        }
+        while (rk + 1 &lt; n &amp;&amp; !occ.has(s.charAt(rk + 1))) {
+            // 不断地移动右指针
+            occ.add(s.charAt(rk + 1));
+            ++rk;
+        }
+        // 第 i 到 rk 个字符是一个极长的无重复字符子串
+        ans = Math.max(ans, rk - i + 1);
+    }
+    return ans;
+};
+</code></pre>
+<h4 id="我的题解">我的题解</h4>
+<h5 id="思路-2">思路</h5>
+<p>获取字符串长度，并循环。每次循环判断map中是否存在key为该字符的值若不存在，将字符作为key，字符所在的位置作为value存入map中，若存在，则获取key为该字符的值将该值与当前的start做比较取较大的值作为start。每次循环计算长度（end-start+1）并与已存在的长度比较取较大的值。</p>
+<figure data-type="image" tabindex="1"><img src="https://panyu97py.github.io/post-images/1613493060500.png" alt="" loading="lazy"></figure>
+<h5 id="代码-2">代码</h5>
+<pre><code>/**
+ * @param {string} s
+ * @return {number}
+ */
+var lengthOfLongestSubstring = function (s) {
+    let tempMap = new Map()
+    let start = 0
+    let length = 0
+    if(!s){
+      return 0
+    }
+    let len = s.length
+    for(let end = 0;end&lt;len;end++){
+      if(tempMap.has(s.charAt(end))){
+        start =Math.max(start,tempMap.get(s.charAt(end))+1) 
+      }
+      tempMap.set(s.charAt(end),end)
+      length = Math.max(length,end-start+1)
+    }
+    return length
+};
+</code></pre>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[两数相加]]></title>
+        <id>https://panyu97py.github.io/post/AcFQPeaQV/</id>
+        <link href="https://panyu97py.github.io/post/AcFQPeaQV/">
+        </link>
+        <updated>2021-02-16T16:28:05.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="题目描述">题目描述</h3>
+<p>给出两个 非空 的链表用来表示两个非负的整数。其中，它们各自的位数是按照 逆序 的方式存储的，并且它们的每个节点只能存储 一位 数字。</p>
+<p>如果，我们将这两个数相加起来，则会返回一个新的链表来表示它们的和。</p>
+<p>您可以假设除了数字 0 之外，这两个数都不会以 0 开头。</p>
+<h4 id="示例">示例：</h4>
+<pre><code>输入：(2 -&gt; 4 -&gt; 3) + (5 -&gt; 6 -&gt; 4)
+输出：7 -&gt; 0 -&gt; 8
+原因：342 + 465 = 807
+</code></pre>
+<h3 id="题解">题解</h3>
+<h4 id="思路">思路：</h4>
+<p>首先我们根据代码注释可以了解到<code>l1</code>,<code>l2</code>的数据格式为：</p>
+<pre><code>{
+    val: 2,
+    next: {
+        val: 4,
+        next: {
+            val: 3,
+            next: null
+        }
+    }
+}
+</code></pre>
+<p>可以理解为每一个节点就是十进制的每一位，我们需要将每一位相加，若相加大于<code>10</code>则向下一位加一。</p>
+<pre><code>/*
+ * @lc app=leetcode.cn id=2 lang=javascript
+ *
+ * [2] 两数相加
+ */
+
+// @lc code=start
+/**
+ * Definition for singly-linked list.
+ * function ListNode(val) {
+ *     this.val = val;
+ *     this.next = null;
+ * }
+ */
+/**
+ * @param {ListNode} l1
+ * @param {ListNode} l2
+ * @return {ListNode}
+ */
+var addTwoNumbers = function (l1, l2) {
+    let node = new ListNode()
+    let temp = node
+    let sum = 0
+    let add = 0
+    // 循环直到l1和l2最后的节点
+    while (l1 || l2) {
+        sum = (l1 ? l1.val : 0) + (l2 ? l2.val : 0) + add;
+        temp.next = new ListNode(sum % 10);//取余
+        temp = temp.next;
+        add = sum &gt;= 10 ? 1 : 0;//记录下sum&gt;=10用于下一次循环加一
+        // 若l1 存在则将l1.next赋值给l1，l2同理
+        l1 &amp;&amp; (l1 = l1.next); 
+        l2 &amp;&amp; (l2 = l2.next);
+    }
+    // 当循环结束，l1与l2最后的节点相加的值 sum&gt;=10 则复制给 temp.next
+    add &amp;&amp; (temp.next = new ListNode(add));
+    return node.next
+};
+// @lc code=end
+
+</code></pre>
+]]></content>
+    </entry>
+</feed>
