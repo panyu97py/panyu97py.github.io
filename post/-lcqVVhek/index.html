@@ -8,8 +8,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-<link rel="shortcut icon" href="https://panyu97py.github.io/favicon.ico?v=1613538944163">
-<link rel="stylesheet" href="https://panyu97py.github.io/styles/main.css">
+<link rel="shortcut icon" href="https://blog.luyu.icu/favicon.ico?v=1613540497053">
+<link rel="stylesheet" href="https://blog.luyu.icu/styles/main.css">
 
 
 
@@ -37,8 +37,8 @@
       <div class="sidebar" :class="{ 'full-height': menuVisible }">
   <div class="top-container" data-aos="fade-right">
     <div class="top-header-container">
-      <a class="site-title-container" href="https://panyu97py.github.io">
-        <img src="https://panyu97py.github.io/images/avatar.png?v=1613538944163" class="site-logo">
+      <a class="site-title-container" href="https://blog.luyu.icu">
+        <img src="https://blog.luyu.icu/images/avatar.png?v=1613540497053" class="site-logo">
         <h1 class="site-title">LuYu&#39;s Blog</h1>
       </a>
       <div class="menu-btn" @click="menuVisible = !menuVisible">
@@ -95,7 +95,7 @@
       共同学习，共同进步
     </div>
     <div class="site-footer">
-      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://panyu97py.github.io/atom.xml" target="_blank">RSS</a>
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://blog.luyu.icu/atom.xml" target="_blank">RSS</a>
     </div>
   </div>
 </div>
@@ -153,7 +153,7 @@
 </ul>
 <h4 id="选中区域">选中区域</h4>
 <p>在将多个组件组合之前，需要先选中它们。利用鼠标事件可以很方便的将选中区域展示出来：</p>
-<figure data-type="image" tabindex="1"><img src="https://panyu97py.github.io/post-images/1613505365488.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="1"><img src="https://blog.luyu.icu/post-images/1613505365488.gif" alt="" loading="lazy"></figure>
 <ol>
 <li><code>mousedown</code> 记录起点坐标</li>
 <li><code>mousemove</code> 将当前坐标和起点坐标进行计算得出移动区域</li>
@@ -184,7 +184,7 @@ const move = (moveEvent) =&gt; {
 }
 </code></pre>
 <p>在 mouseup 事件触发时，需要对选中区域内的所有组件的位移大小信息进行计算，得出一个能包含区域内所有组件的最小区域。这个效果如下图所示：</p>
-<figure data-type="image" tabindex="2"><img src="https://panyu97py.github.io/post-images/1613505466651.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="2"><img src="https://blog.luyu.icu/post-images/1613505466651.gif" alt="" loading="lazy"></figure>
 <p>这个计算过程的代码：</p>
 <pre><code class="language-js">createGroup() {
   // 获取选中区域的组件数据
@@ -358,19 +358,19 @@ methods: {
 <p>也就是将子组件的 <code>left</code>、<code>top</code>、<code>right</code>、<code>bottom</code> 等属性转成以 <code>%</code> 结尾的相对数值。</p>
 <p><strong>为什么不使用绝对数值？</strong></p>
 <p>如果使用绝对数值，那么在移动 <code>Group</code> 组件时，除了对 <code>Group</code> 组件的属性进行计算外，还需要对它的每个子组件进行计算。并且 <code>Group</code> 包含子组件太多的话，在进行移动、放大缩小时，计算量会非常大，有可能会造成页面卡顿。如果改成相对数值，则只需要在 <code>Group</code> 创建时计算一次。然后在 <code>Group</code> 组件进行移动、旋转时也不用管 <code>Group</code> 的子组件，只对它自己计算即可。</p>
-<figure data-type="image" tabindex="3"><img src="https://panyu97py.github.io/post-images/1613505786018.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="3"><img src="https://blog.luyu.icu/post-images/1613505786018.gif" alt="" loading="lazy"></figure>
 <h4 id="组合后的放大缩小">组合后的放大缩小</h4>
 <p>组合后的放大缩小是个大问题，主要是因为有旋转角度的存在。首先来看一下各个子组件没旋转时的放大缩小：</p>
-<figure data-type="image" tabindex="4"><img src="https://panyu97py.github.io/post-images/1613505848014.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="4"><img src="https://blog.luyu.icu/post-images/1613505848014.gif" alt="" loading="lazy"></figure>
 <p>从动图可以看出，效果非常完美。各个子组件的大小是跟随 <code>Group</code> 组件的大小而改变的。</p>
 <p>现在试着给子组件加上旋转角度，再看一下效果：</p>
-<figure data-type="image" tabindex="5"><img src="https://panyu97py.github.io/post-images/1613505895886.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="5"><img src="https://blog.luyu.icu/post-images/1613505895886.gif" alt="" loading="lazy"></figure>
 <p>为什么会出现这个问题？<br>
 主要是因为一个组件无论旋不旋转，它的 <code>left</code>、<code>top</code> 属性都是不变的。这样就会有一个问题，虽然实际上组件的  <code>left</code>、<code>top</code>、<code>right</code>、<code>bottom</code>  属性没有变化。但在外观上却发生了变化。下面是两个同样的组件：一个没旋转，一个旋转了 45 度。</p>
-<p><img src="https://panyu97py.github.io/post-images/1613505976304.png" alt="" loading="lazy"><br>
+<p><img src="https://blog.luyu.icu/post-images/1613505976304.png" alt="" loading="lazy"><br>
 可以看出来旋转后按钮的<code>left</code>、<code>top</code>、<code>right</code>、<code>bottom</code> 属性和我们从外观上看到的是不一样的。</p>
 <p>接下来再看一个具体的示例：</p>
-<figure data-type="image" tabindex="6"><img src="https://panyu97py.github.io/post-images/1613506012073.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="6"><img src="https://blog.luyu.icu/post-images/1613506012073.png" alt="" loading="lazy"></figure>
 <p>上面是一个 <code>Group</code> 组件，它左边的子组件属性为：</p>
 <pre><code class="language-css">transform: rotate(-75.1967deg);
 width: 51.2267%;
@@ -382,12 +382,12 @@ left: -10.6496%;
 <h5 id="一个不可行的解决方案不想看的可以跳过">一个不可行的解决方案（不想看的可以跳过）</h5>
 <p>一开始我想的是，先算出它相对浏览器视口的 <code>left</code>、<code>top</code>、<code>right</code>、<code>bottom</code> 属性，再算出这几个属性在 <code>Group</code> 组件上的相对数值。这可以通过 <code>getBoundingClientRect()</code> <code>API</code> 实现。只要维持外观上的各个属性占比不变，这样 <code>Group</code> 组件在放大缩小时，再通过旋转角度，利用旋转矩阵的知识（这一点在第二篇有详细描述）获取它未旋转前的 t<code>left</code>、<code>top</code>、<code>right</code>、<code>bottom</code>  属性。这样就可以做到子组件动态调整了。</p>
 <p>但是这有个问题，通过 <code>getBoundingClientRect()</code> API 只能获取组件外观上的 <code>left</code>、<code>top</code>、<code>right</code>、<code>bottom</code>  属性。再加上一个角度，参数还是不够，所以无法计算出组件实际的 <code>left</code>、<code>top</code>、<code>right</code>、<code>bottom</code>  属性。</p>
-<figure data-type="image" tabindex="7"><img src="https://panyu97py.github.io/post-images/1613506253945.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="7"><img src="https://blog.luyu.icu/post-images/1613506253945.png" alt="" loading="lazy"></figure>
 <p>就像上面的这张图，只知道原点<code>O(x,y)</code>、 <code>w</code>、<code>h</code> 和旋转角度，无法算出按钮的宽高。</p>
 <h4 id="一个可行的解决方案">一个可行的解决方案</h4>
 <p>这是无意中发现的，我在对 <code>Group</code> 组件进行放大缩小时，发现只要保持 <code>Group</code> 组件的宽高比例，子组件就能做到根据比例放大缩小。那么现在问题就转变成了如何让 <code>Group</code> 组件放大缩小时保持宽高比例。我在网上找到了这一篇<a href="https://github.com/shenhudong/snapping-demo/wiki/corner-handle">文章</a>，它详细描述了一个旋转组件如何保持宽高比来进行放大缩小，并配有源码示例。</p>
 <p>现在我尝试简单描述一下如何保持宽高比对一个旋转组件进行放大缩小（建议还是看看原文）。下面是一个已旋转一定角度的矩形，假设现在拖动它左上方的点进行拉伸。</p>
-<figure data-type="image" tabindex="8"><img src="https://panyu97py.github.io/post-images/1613506394348.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="8"><img src="https://blog.luyu.icu/post-images/1613506394348.png" alt="" loading="lazy"></figure>
 <p><strong>第一步</strong>，算出组件宽高比，以及按下鼠标时通过组件的坐标（无论旋转多少度，组件的 <code>top</code> 、<code>left</code> 属性不变）和大小算出组件中心点：</p>
 <pre><code class="language-js">// 组件宽高比
 const proportion = style.width / style.height
@@ -430,7 +430,7 @@ function getCenterPoint(p1, p2) {
 }
 </code></pre>
 <p>由于组件处于旋转状态，即使你知道了拉伸时移动的 xy 距离，也不能直接对组件进行计算。否则就会出现 BUG，移位或者放大缩小方向不正确。因此，我们需要在组件未旋转的情况下对其进行计算。</p>
-<figure data-type="image" tabindex="9"><img src="https://panyu97py.github.io/post-images/1613506539352.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="9"><img src="https://blog.luyu.icu/post-images/1613506539352.png" alt="" loading="lazy"></figure>
 <p><strong>第四步</strong>，根据已知的旋转角度、新的组件中心点、当前鼠标实时坐标可以算出当前鼠标实时坐标 <code>currentPosition</code> 在未旋转时的坐标 <code>newTopLeftPoint</code>。同时也能根据已知的旋转角度、新的组件中心点、对称点算出组件对称点 sPoint 在未旋转时的坐标 <code>newBottomRightPoint</code>。<br>
 对应的计算公式如下：</p>
 <pre><code class="language-js">/**
@@ -459,8 +459,8 @@ export function calculateRotatedPointCoordinate(point, center, rotate) {
 }
 </code></pre>
 <p>上面的公式涉及到线性代数中旋转矩阵的知识，对于一个没上过大学的人来说，实在太难了。还好我从<a href="https://www.zhihu.com/question/67425734/answer/252724399">知乎上的一个回答</a>中找到了这一公式的推理过程，下面是回答的原文：</p>
-<figure data-type="image" tabindex="10"><img src="https://panyu97py.github.io/post-images/1613506660740.png" alt="" loading="lazy"></figure>
-<figure data-type="image" tabindex="11"><img src="https://panyu97py.github.io/post-images/1613506688090.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="10"><img src="https://blog.luyu.icu/post-images/1613506660740.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="11"><img src="https://blog.luyu.icu/post-images/1613506688090.png" alt="" loading="lazy"></figure>
 <p>通过以上几个计算值，就可以得到组件新的位移值 <code>top</code>、<code>left</code> 以及新的组件大小。对应的完整代码如下：</p>
 <pre><code class="language-js">function calculateLeftTop(style, curPositon, pointInfo) {
     const { symmetricPoint } = pointInfo
@@ -479,7 +479,7 @@ export function calculateRotatedPointCoordinate(point, center, rotate) {
 }
 </code></pre>
 <p>现在再来看一下旋转后的放大缩小：</p>
-<figure data-type="image" tabindex="12"><img src="https://panyu97py.github.io/post-images/1613506759227.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="12"><img src="https://blog.luyu.icu/post-images/1613506759227.gif" alt="" loading="lazy"></figure>
 <p><strong>第五步</strong>，由于我们现在需要的是锁定宽高比来进行放大缩小，所以需要重新计算拉伸后的图形的左上角坐标。</p>
 <p>这里先确定好几个形状的命名：</p>
 <ul>
@@ -487,9 +487,9 @@ export function calculateRotatedPointCoordinate(point, center, rotate) {
 <li>新图形: 　蓝色部分</li>
 <li>修正图形: 绿色部分，即加上宽高比锁定规则的修正图形</li>
 </ul>
-<figure data-type="image" tabindex="13"><img src="https://panyu97py.github.io/post-images/1613506825223.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="13"><img src="https://blog.luyu.icu/post-images/1613506825223.gif" alt="" loading="lazy"></figure>
 <p>在第四步中算出组件未旋转前的 <code>newTopLeftPoint</code> <code>newBottomRightPoint</code> <code>newWidth</code> <code>newHeight</code> 后，需要根据宽高比 <code>proportion</code> 来算出新的宽度或高度。</p>
-<figure data-type="image" tabindex="14"><img src="https://panyu97py.github.io/post-images/1613506905389.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="14"><img src="https://blog.luyu.icu/post-images/1613506905389.png" alt="" loading="lazy"></figure>
 <p>上图就是一个需要改变高度的示例，计算过程如下：</p>
 <pre><code class="language-js">if (newWidth / newHeight &gt; proportion) {
     newTopLeftPoint.x += Math.abs(newWidth - newHeight * proportion)
@@ -500,8 +500,8 @@ export function calculateRotatedPointCoordinate(point, center, rotate) {
 }
 </code></pre>
 <p>由于现在求的未旋转前的坐标是以没按比例缩减宽高前的坐标来计算的，所以缩减宽高后，需要按照原来的中心点旋转回去，获得缩减宽高并旋转后对应的坐标。然后以这个坐标和对称点获得新的中心点，并重新计算未旋转前的坐标。</p>
-<figure data-type="image" tabindex="15"><img src="https://panyu97py.github.io/post-images/1613506955962.png" alt="" loading="lazy"></figure>
-<figure data-type="image" tabindex="16"><img src="https://panyu97py.github.io/post-images/1613507009595.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="15"><img src="https://blog.luyu.icu/post-images/1613506955962.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="16"><img src="https://blog.luyu.icu/post-images/1613507009595.png" alt="" loading="lazy"></figure>
 <p>经过修改后的完整代码如下：</p>
 <pre><code class="language-js">function calculateLeftTop(style, curPositon, proportion, needLockProportion, pointInfo) {
     const { symmetricPoint } = pointInfo
@@ -542,7 +542,7 @@ export function calculateRotatedPointCoordinate(point, center, rotate) {
 }
 </code></pre>
 <p>保持宽高比进行放大缩小的效果如下：</p>
-<figure data-type="image" tabindex="17"><img src="https://panyu97py.github.io/post-images/1613507087355.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="17"><img src="https://blog.luyu.icu/post-images/1613507087355.gif" alt="" loading="lazy"></figure>
 <p>当 <code>Group</code> 组件有旋转的子组件时，才需要保持宽高比进行放大缩小。所以在创建 <code>Group</code> 组件时可以判断一下子组件是否有旋转角度。如果没有，就不需要保持宽度比进行放大缩小。</p>
 <pre><code class="language-js">isNeedLockProportion() {
     if (this.element.component != 'Group') return false
@@ -728,7 +728,7 @@ export default {
 <li>粘贴时过滤掉文本的样式。</li>
 <li>换行时自动扩充文本框的高度。</li>
 </ol>
-<figure data-type="image" tabindex="18"><img src="https://panyu97py.github.io/post-images/1613507304088.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="18"><img src="https://blog.luyu.icu/post-images/1613507304088.gif" alt="" loading="lazy"></figure>
 <h3 id="20-矩形组件">20. 矩形组件</h3>
 <p>矩形组件其实就是一个内嵌 <code>VText</code> 文本组件的一个 <code>DIV</code></p>
 <pre><code class="language-js">&lt;template&gt;
@@ -756,7 +756,7 @@ export default {
 &lt;/style&gt;
 </code></pre>
 <p><code>VText</code> 文本组件有的功能它都有，并且可以任意放大缩小。</p>
-<figure data-type="image" tabindex="19"><img src="https://panyu97py.github.io/post-images/1613507388868.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="19"><img src="https://blog.luyu.icu/post-images/1613507388868.gif" alt="" loading="lazy"></figure>
 <h3 id="21-锁定组件">21. 锁定组件</h3>
 <p>锁定组件主要是看到 <code>processon</code> 和墨刀有这个功能，于是我顺便实现了。锁定组件的具体需求为：不能移动、放大缩小、旋转、复制、粘贴等，只能进行解锁操作。<br>
 它的实现原理也不难：</p>
@@ -802,7 +802,7 @@ export default {
     &lt;/div&gt;
 &lt;/template&gt;
 </code></pre>
-<figure data-type="image" tabindex="20"><img src="https://panyu97py.github.io/post-images/1613507515799.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="20"><img src="https://blog.luyu.icu/post-images/1613507515799.gif" alt="" loading="lazy"></figure>
 <h3 id="22-快捷键">22. 快捷键</h3>
 <p>支持快捷键主要是为了提升开发效率，用鼠标点点点毕竟没有按键盘快。目前快捷键支持的功能如下：</p>
 <pre><code>const ctrlKey = 17, 
@@ -1014,7 +1014,7 @@ recordSnapshot(state) {
             
               <div class="tag-container">
                 
-                  <a href="https://panyu97py.github.io/tag/vue/" class="tag">
+                  <a href="https://blog.luyu.icu/tag/vue/" class="tag">
                     vue
                   </a>
                 
@@ -1023,7 +1023,7 @@ recordSnapshot(state) {
             
               <div class="next-post">
                 <div class="next">下一篇</div>
-                <a href="https://panyu97py.github.io/post/1yIc3meiD/">
+                <a href="https://blog.luyu.icu/post/1yIc3meiD/">
                   <h3 class="post-title">
                     可视化拖拽组件库一些技术要点原理分析（二）
                   </h3>

@@ -8,8 +8,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-<link rel="shortcut icon" href="https://panyu97py.github.io/favicon.ico?v=1613538944163">
-<link rel="stylesheet" href="https://panyu97py.github.io/styles/main.css">
+<link rel="shortcut icon" href="https://blog.luyu.icu/favicon.ico?v=1613540497053">
+<link rel="stylesheet" href="https://blog.luyu.icu/styles/main.css">
 
 
 
@@ -42,8 +42,8 @@
       <div class="sidebar" :class="{ 'full-height': menuVisible }">
   <div class="top-container" data-aos="fade-right">
     <div class="top-header-container">
-      <a class="site-title-container" href="https://panyu97py.github.io">
-        <img src="https://panyu97py.github.io/images/avatar.png?v=1613538944163" class="site-logo">
+      <a class="site-title-container" href="https://blog.luyu.icu">
+        <img src="https://blog.luyu.icu/images/avatar.png?v=1613540497053" class="site-logo">
         <h1 class="site-title">LuYu&#39;s Blog</h1>
       </a>
       <div class="menu-btn" @click="menuVisible = !menuVisible">
@@ -100,7 +100,7 @@
       共同学习，共同进步
     </div>
     <div class="site-footer">
-      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://panyu97py.github.io/atom.xml" target="_blank">RSS</a>
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://blog.luyu.icu/atom.xml" target="_blank">RSS</a>
     </div>
   </div>
 </div>
@@ -156,7 +156,7 @@
 <p>Math.atan2() 返回从原点(0,0)到(x,y)点的线段与x轴正方向之间的平面角度(弧度值)，也就是Math.atan2(y,x)。Math.atan2(y,x)中的y和x都是相对于圆点(0,0)的距离。</p>
 </blockquote>
 <p>简单的说就是以组件中心点为原点<code>(centerX,centerY)</code>，用户按下鼠标时的坐标设为 <code>(startX,startY)</code>，鼠标移动时的坐标设为<code>(curX,curY)</code>。旋转角度可以通过 <code>(startX,startY)</code>和 <code>(curX,curY)</code>计算得出。<br>
-<img src="https://panyu97py.github.io/post-images/1613501916438.png" alt="" loading="lazy"></p>
+<img src="https://blog.luyu.icu/post-images/1613501916438.png" alt="" loading="lazy"></p>
 <p>那我们如何得到从点 <code>(startX,startY)</code>到点<code>(curX,curY)</code>之间的旋转角度呢？</p>
 <p><strong>第一步</strong>，鼠标点击时的坐标设为<code>(startX,startY)</code>：</p>
 <pre><code class="language-js">const startY = e.clientY
@@ -180,21 +180,21 @@ const rotateDegreeAfter = Math.atan2(curY - centerY, curX - centerX) / (Math.PI 
 // 获取旋转的角度值， startRotate 为初始角度值
 pos.rotate = startRotate + rotateDegreeAfter - rotateDegreeBefore
 </code></pre>
-<figure data-type="image" tabindex="1"><img src="https://panyu97py.github.io/post-images/1613502114333.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="1"><img src="https://blog.luyu.icu/post-images/1613502114333.gif" alt="" loading="lazy"></figure>
 <h4 id="放大缩小">放大缩小</h4>
 <p>组件旋转后的放大缩小会有 BUG。</p>
-<figure data-type="image" tabindex="2"><img src="https://panyu97py.github.io/post-images/1613502171703.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="2"><img src="https://blog.luyu.icu/post-images/1613502171703.gif" alt="" loading="lazy"></figure>
 <p>从上图可以看到，放大缩小时会发生移位。另外伸缩的方向和我们拖动的方向也不对。造成这一 BUG 的原因是：当初设计放大缩小功能没有考虑到旋转的场景。所以无论旋转多少角度，放大缩小仍然是按没旋转时计算的。</p>
 <p>下面再看一个具体的示例：</p>
-<figure data-type="image" tabindex="3"><img src="https://panyu97py.github.io/post-images/1613502210577.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="3"><img src="https://blog.luyu.icu/post-images/1613502210577.png" alt="" loading="lazy"></figure>
 <p>从上图可以看出，在没有旋转时，按住顶点往上拖动，只需用 <code>y2 - y1</code> 就可以得出拖动距离<code>s</code>。这时将组件原来的高度加上 <code>s</code> 就能得出新的高度，同时将组件的 <code>top</code>、<code>left</code> 属性更新。</p>
-<figure data-type="image" tabindex="4"><img src="https://panyu97py.github.io/post-images/1613502283095.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="4"><img src="https://blog.luyu.icu/post-images/1613502283095.png" alt="" loading="lazy"></figure>
 <p>现在旋转 180 度，如果这时拖住顶点往下拖动，我们期待的结果是组件高度增加。但这时计算的方式和原来没旋转时是一样的，所以结果和我们期待的相反，组件的高度将会变小（如果不理解这个现象，可以想像一下没有旋转的那张图，按住顶点往下拖动）。</p>
-<figure data-type="image" tabindex="5"><img src="https://panyu97py.github.io/post-images/1613502327476.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="5"><img src="https://blog.luyu.icu/post-images/1613502327476.gif" alt="" loading="lazy"></figure>
 <p>如何解决这个问题呢？我从 github 上的一个项目<a href="https://github.com/shenhudong/snapping-demo/wiki/corner-handle"> <code>snapping-demo</code> </a>找到了解决方案：将放大缩小和旋转角度关联起来。</p>
 <h5 id="解决方案">解决方案</h5>
 <p>下面是一个已旋转一定角度的矩形，假设现在拖动它左上方的点进行拉伸。</p>
-<figure data-type="image" tabindex="6"><img src="https://panyu97py.github.io/post-images/1613502421743.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="6"><img src="https://blog.luyu.icu/post-images/1613502421743.png" alt="" loading="lazy"></figure>
 <p>现在我们将一步步分析如何得出拉伸后的组件的正确大小和位移。</p>
 <p><strong>第一步</strong>，按下鼠标时通过组件的坐标（无论旋转多少度，组件的 top left 属性不变）和大小算出组件中心点：</p>
 <pre><code class="language-js">const center = {
@@ -235,7 +235,7 @@ function getCenterPoint(p1, p2) {
 }
 </code></pre>
 <p>由于组件处于旋转状态，即使你知道了拉伸时移动的<code>xy</code>距离，也不能直接对组件进行计算。否则就会出现 BUG，移位或者放大缩小方向不正确。因此，我们需要在组件未旋转的情况下对其进行计算。</p>
-<figure data-type="image" tabindex="7"><img src="https://panyu97py.github.io/post-images/1613502562307.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="7"><img src="https://blog.luyu.icu/post-images/1613502562307.png" alt="" loading="lazy"></figure>
 <p><strong>第四步</strong>，根据已知的旋转角度、新的组件中心点、当前鼠标实时坐标可以算出当前鼠标实时坐标 <code>currentPosition</code> 在未旋转时的坐标 <code>newTopLeftPoint</code>。同时也能根据已知的旋转角度、新的组件中心点、对称点算出组件对称点 <code>sPoint</code> 在未旋转时的坐标 <code>newBottomRightPoint</code>。<br>
 对应的计算公式如下：</p>
 <pre><code class="language-js">/**
@@ -264,8 +264,8 @@ export function calculateRotatedPointCoordinate(point, center, rotate) {
 }
 </code></pre>
 <p>上面的公式涉及到线性代数中旋转矩阵的知识，对于一个没上过大学的人来说，实在太难了。还好我从<a href="https://www.zhihu.com/question/67425734/answer/252724399">知乎上的一个回答</a>中找到了这一公式的推理过程，下面是回答的原文：</p>
-<figure data-type="image" tabindex="8"><img src="https://panyu97py.github.io/post-images/1613502683980.png" alt="" loading="lazy"></figure>
-<figure data-type="image" tabindex="9"><img src="https://panyu97py.github.io/post-images/1613502701696.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="8"><img src="https://blog.luyu.icu/post-images/1613502683980.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="9"><img src="https://blog.luyu.icu/post-images/1613502701696.png" alt="" loading="lazy"></figure>
 <p>通过以上几个计算值，就可以得到组件新的位移值<code>top</code>、<code>left</code> 以及新的组件大小。对应的完整代码如下：</p>
 <pre><code class="language-js">function calculateLeftTop(style, curPositon, pointInfo) {
     const { symmetricPoint } = pointInfo
@@ -284,15 +284,15 @@ export function calculateRotatedPointCoordinate(point, center, rotate) {
 }
 </code></pre>
 <p>现在再来看一下旋转后的放大缩小：</p>
-<figure data-type="image" tabindex="10"><img src="https://panyu97py.github.io/post-images/1613502785374.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="10"><img src="https://blog.luyu.icu/post-images/1613502785374.gif" alt="" loading="lazy"></figure>
 <h4 id="自动吸附">自动吸附</h4>
 <p>自动吸附是根据组件的四个属性 <code>top</code>、<code>left</code> 、<code>width</code> 、<code>height</code> 计算的，在将组件进行旋转后，这些属性的值是不会变的。所以无论组件旋转多少度，吸附时仍然按未旋转时计算。这样就会有一个问题，虽然实际上组件的 <code>top</code>、<code>left</code> 、<code>width</code> 、<code>height</code> 属性没有变化。但在外观上却发生了变化。下面是两个同样的组件：一个没旋转，一个旋转了 45 度。</p>
-<figure data-type="image" tabindex="11"><img src="https://panyu97py.github.io/post-images/1613502878822.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="11"><img src="https://blog.luyu.icu/post-images/1613502878822.png" alt="" loading="lazy"></figure>
 <p>可以看出来旋转后按钮的 <code>height</code> 属性和我们从外观上看到的高度是不一样的，所以在这种情况下就出现了吸附不正确的 BUG。</p>
-<figure data-type="image" tabindex="12"><img src="https://panyu97py.github.io/post-images/1613502923904.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="12"><img src="https://blog.luyu.icu/post-images/1613502923904.gif" alt="" loading="lazy"></figure>
 <h5 id="解决方案-2">解决方案</h5>
 <p>如何解决这个问题？我们需要拿组件旋转后的大小及位移来做吸附对比。也就是说不要拿组件实际的属性来对比，而是拿我们看到的大小和位移做对比。</p>
-<figure data-type="image" tabindex="13"><img src="https://panyu97py.github.io/post-images/1613502993620.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="13"><img src="https://blog.luyu.icu/post-images/1613502993620.png" alt="" loading="lazy"></figure>
 <p>从上图可以看出，旋转后的组件在 x 轴上的投射长度为两条红线长度之和。这两条红线的长度可以通过正弦和余弦算出，左边的红线用正弦计算，右边的红线用余弦计算：</p>
 <pre><code class="language-js">const newWidth = style.width * cos(style.rotate) + style.height * sin(style.rotate)
 </code></pre>
@@ -324,13 +324,13 @@ export function calculateRotatedPointCoordinate(point, center, rotate) {
 }
 </code></pre>
 <p>经过修复后，吸附也可以正常显示了</p>
-<figure data-type="image" tabindex="14"><img src="https://panyu97py.github.io/post-images/1613503143257.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="14"><img src="https://blog.luyu.icu/post-images/1613503143257.gif" alt="" loading="lazy"></figure>
 <h4 id="光标">光标</h4>
 <p>光标和可拖动的方向不对，是因为八个点的光标是固定设置的，没有随着角度变化而变化。</p>
-<figure data-type="image" tabindex="15"><img src="https://panyu97py.github.io/post-images/1613503197769.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="15"><img src="https://blog.luyu.icu/post-images/1613503197769.gif" alt="" loading="lazy"></figure>
 <h5 id="解决方案-3">解决方案</h5>
 <p>由于 <code>360 / 8 = 45</code>，所以可以为每一个方向分配 45 度的范围，每个范围对应一个光标。同时为每个方向设置一个初始角度，也就是未旋转时组件每个方向对应的角度。</p>
-<figure data-type="image" tabindex="16"><img src="https://panyu97py.github.io/post-images/1613503255637.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="16"><img src="https://blog.luyu.icu/post-images/1613503255637.png" alt="" loading="lazy"></figure>
 <pre><code class="language-js">pointList: ['lt', 't', 'rt', 'r', 'rb', 'b', 'lb', 'l'], // 八个方向
 initialAngle: { // 每个点对应的初始角度
     lt: 0,
@@ -387,7 +387,7 @@ cursors: {},
     return result
 },
 </code></pre>
-<figure data-type="image" tabindex="17"><img src="https://panyu97py.github.io/post-images/1613503358536.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="17"><img src="https://blog.luyu.icu/post-images/1613503358536.gif" alt="" loading="lazy"></figure>
 <p>从上面的动图可以看出来，现在八个方向上的光标是可以正确显示的。</p>
 <h3 id="15-复制粘贴剪切">15. 复制粘贴剪切</h3>
 <p>相对于拖拽旋转功能，复制粘贴就比较简单了。</p>
@@ -609,7 +609,7 @@ componentList.forEach(component =&gt; {
             
               <div class="tag-container">
                 
-                  <a href="https://panyu97py.github.io/tag/vue/" class="tag">
+                  <a href="https://blog.luyu.icu/tag/vue/" class="tag">
                     vue
                   </a>
                 
@@ -618,7 +618,7 @@ componentList.forEach(component =&gt; {
             
               <div class="next-post">
                 <div class="next">下一篇</div>
-                <a href="https://panyu97py.github.io/post/gFf8ea3r7/">
+                <a href="https://blog.luyu.icu/post/gFf8ea3r7/">
                   <h3 class="post-title">
                     可视化拖拽组件库一些技术要点原理分析（一）
                   </h3>

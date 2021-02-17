@@ -8,8 +8,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-<link rel="shortcut icon" href="https://panyu97py.github.io/favicon.ico?v=1613538944163">
-<link rel="stylesheet" href="https://panyu97py.github.io/styles/main.css">
+<link rel="shortcut icon" href="https://blog.luyu.icu/favicon.ico?v=1613540497053">
+<link rel="stylesheet" href="https://blog.luyu.icu/styles/main.css">
 
 
 
@@ -35,8 +35,8 @@ Build Syste..." />
       <div class="sidebar" :class="{ 'full-height': menuVisible }">
   <div class="top-container" data-aos="fade-right">
     <div class="top-header-container">
-      <a class="site-title-container" href="https://panyu97py.github.io">
-        <img src="https://panyu97py.github.io/images/avatar.png?v=1613538944163" class="site-logo">
+      <a class="site-title-container" href="https://blog.luyu.icu">
+        <img src="https://blog.luyu.icu/images/avatar.png?v=1613540497053" class="site-logo">
         <h1 class="site-title">LuYu&#39;s Blog</h1>
       </a>
       <div class="menu-btn" @click="menuVisible = !menuVisible">
@@ -93,7 +93,7 @@ Build Syste..." />
       共同学习，共同进步
     </div>
     <div class="site-footer">
-      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://panyu97py.github.io/atom.xml" target="_blank">RSS</a>
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://blog.luyu.icu/atom.xml" target="_blank">RSS</a>
     </div>
   </div>
 </div>
@@ -148,24 +148,24 @@ The legacy build system is still available in Xcode 10. To use the legacy build 
 </code></pre>
 <h3 id="解决方法可以有两种">解决方法可以有两种:</h3>
 <h4 id="1-一种是不使用new-build-system在file-projectworkspace-settings中的share-projectworkspace-settings里build-system将new-build-systemdefault切换成legacy-build-system">1. 一种是不使用<code>New Build System</code>，在<code>File</code> &gt; <code>Project/Workspace Settings</code>中的<code>Share Project/Workspace Settings</code>里<code>build system</code>将<code>New Build System(Default)</code>切换成<code>Legacy build system</code>。</h4>
-<figure data-type="image" tabindex="1"><img src="https://panyu97py.github.io/post-images/1613494079991.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="1"><img src="https://blog.luyu.icu/post-images/1613494079991.png" alt="" loading="lazy"></figure>
 <h4 id="其次是根据出错信息在新创建系统模式下去除多余的引用重建">其次是根据出错信息，在新创建系统模式下，去除多余的引用重建。</h4>
 <h5 id="1-infoplist-2">1. Info.plist</h5>
 <p>在 <code>target</code> -&gt; <code>Build phase</code> &gt; <code>Copy Bundle Resource</code> 中找到<code>info.plist</code>，移除</p>
-<figure data-type="image" tabindex="2"><img src="https://panyu97py.github.io/post-images/1613494034862.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="2"><img src="https://blog.luyu.icu/post-images/1613494034862.png" alt="" loading="lazy"></figure>
 <h5 id="2-copy-pods-resources-2">2. Copy Pods Resources</h5>
 <p>在 <code>target</code> -&gt; <code>Build phase</code> -&gt; <code>Copy Pods Resources</code> -&gt; <code>Output Files</code>，移除<code>${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}</code></p>
-<figure data-type="image" tabindex="3"><img src="https://panyu97py.github.io/post-images/1613494090242.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="3"><img src="https://blog.luyu.icu/post-images/1613494090242.png" alt="" loading="lazy"></figure>
 
             </div>
             
               <div class="tag-container">
                 
-                  <a href="https://panyu97py.github.io/tag/EQHzK48mS/" class="tag">
+                  <a href="https://blog.luyu.icu/tag/EQHzK48mS/" class="tag">
                     ios
                   </a>
                 
-                  <a href="https://panyu97py.github.io/tag/TFfhTEfXd/" class="tag">
+                  <a href="https://blog.luyu.icu/tag/TFfhTEfXd/" class="tag">
                     react-native
                   </a>
                 
@@ -174,7 +174,7 @@ The legacy build system is still available in Xcode 10. To use the legacy build 
             
               <div class="next-post">
                 <div class="next">下一篇</div>
-                <a href="https://panyu97py.github.io/post/d6wdVAP5_/">
+                <a href="https://blog.luyu.icu/post/d6wdVAP5_/">
                   <h3 class="post-title">
                     寻找两个正序数组的中位数
                   </h3>

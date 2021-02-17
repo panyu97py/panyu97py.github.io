@@ -8,8 +8,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-<link rel="shortcut icon" href="https://panyu97py.github.io/favicon.ico?v=1613538944163">
-<link rel="stylesheet" href="https://panyu97py.github.io/styles/main.css">
+<link rel="shortcut icon" href="https://blog.luyu.icu/favicon.ico?v=1613540497053">
+<link rel="stylesheet" href="https://blog.luyu.icu/styles/main.css">
 
 
 
@@ -42,8 +42,8 @@
       <div class="sidebar" :class="{ 'full-height': menuVisible }">
   <div class="top-container" data-aos="fade-right">
     <div class="top-header-container">
-      <a class="site-title-container" href="https://panyu97py.github.io">
-        <img src="https://panyu97py.github.io/images/avatar.png?v=1613538944163" class="site-logo">
+      <a class="site-title-container" href="https://blog.luyu.icu">
+        <img src="https://blog.luyu.icu/images/avatar.png?v=1613540497053" class="site-logo">
         <h1 class="site-title">LuYu&#39;s Blog</h1>
       </a>
       <div class="menu-btn" @click="menuVisible = !menuVisible">
@@ -100,7 +100,7 @@
       共同学习，共同进步
     </div>
     <div class="site-footer">
-      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://panyu97py.github.io/atom.xml" target="_blank">RSS</a>
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://blog.luyu.icu/atom.xml" target="_blank">RSS</a>
     </div>
   </div>
 </div>
@@ -136,7 +136,7 @@
 <p>建议结合源码一起阅读，效果更好（这个 DEMO 使用的是 Vue 技术栈）。</p>
 <h3 id="1-编辑器">1. 编辑器</h3>
 <p>先来看一下页面的整体结构。<br>
-<img src="https://panyu97py.github.io/post-images/1613497344188.png" alt="" loading="lazy"></p>
+<img src="https://blog.luyu.icu/post-images/1613497344188.png" alt="" loading="lazy"></p>
 <p>这一节要讲的编辑器其实就是中间的画布。它的作用是：当从左边组件列表拖拽出一个组件放到画布中时，画布要把这个组件渲染出来。<br>
 这个编辑器的实现思路是：</p>
 <p>用一个数组 <code>componentData</code> 维护编辑器中的数据。<br>
@@ -284,7 +284,7 @@ export default {
 }
 </code></pre>
 <p>触发 <code>drop</code> 事件时，使用 <code>dataTransfer.getData()</code> 接收传输过来的索引数据，然后根据索引找到对应的组件数据，再添加到画布，从而渲染组件。<br>
-<img src="https://panyu97py.github.io/post-images/1613497886196.gif" alt="" loading="lazy"></p>
+<img src="https://blog.luyu.icu/post-images/1613497886196.gif" alt="" loading="lazy"></p>
 <h4 id="组件在画布中移动">组件在画布中移动</h4>
 <p>首先需要将画布设为相对定位 <code>position: relative</code>，然后将每个组件设为绝对定位 <code>position: absolute</code>。除了这一点外，还要通过监听三个事件来进行移动：</p>
 <ol>
@@ -321,7 +321,7 @@ export default {
     document.addEventListener('mouseup', up)
 }
 </code></pre>
-<figure data-type="image" tabindex="1"><img src="https://panyu97py.github.io/post-images/1613498024998.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="1"><img src="https://blog.luyu.icu/post-images/1613498024998.gif" alt="" loading="lazy"></figure>
 <h3 id="4-删除组件-调整图层层级">4. 删除组件、调整图层层级</h3>
 <h4 id="改变图层层级">改变图层层级</h4>
 <p>由于拖拽组件到画布中是有先后顺序的，所以可以按照数据顺序来分配图层层级。<br>
@@ -340,10 +340,10 @@ componentData[2] = temp
 componentData[0] = componentData[componentData.lenght - 1]
 componentData[componentData.lenght - 1] = temp
 </code></pre>
-<figure data-type="image" tabindex="2"><img src="https://panyu97py.github.io/post-images/1613498228508.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="2"><img src="https://blog.luyu.icu/post-images/1613498228508.gif" alt="" loading="lazy"></figure>
 <h4 id="删除组件">删除组件</h4>
 <p>删除组件非常简单，一行代码搞定：<code>componentData.splice(index, 1)</code>。<br>
-<img src="https://panyu97py.github.io/post-images/1613498335942.gif" alt="" loading="lazy"></p>
+<img src="https://blog.luyu.icu/post-images/1613498335942.gif" alt="" loading="lazy"></p>
 <h3 id="5-放大缩小">5. 放大缩小</h3>
 <p>细心的网友可能会发现，点击画布上的组件时，组件上会出现 8 个小圆点。这 8 个小圆点就是用来放大缩小用的。实现原理如下：</p>
 <h4 id="1-在每个组件外面包一层-shape组件shape-组件里包含-8-个小圆点和一个-slot插槽用于放置组件">1. 在每个组件外面包一层 <code>Shape</code>组件，<code>Shape</code> 组件里包含 8 个小圆点和一个 <code>&lt;slot&gt;</code>插槽，用于放置组件。</h4>
@@ -435,9 +435,9 @@ getPointStyle(point) {
 <li>左下角的小圆点，坐标 <code>left: 0, top: height</code></li>
 <li>右下角的小圆点，坐标 <code>left: width, top: height</code></li>
 </ol>
-<figure data-type="image" tabindex="3"><img src="https://panyu97py.github.io/post-images/1613498726273.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="3"><img src="https://blog.luyu.icu/post-images/1613498726273.png" alt="" loading="lazy"></figure>
 <p>另外的四个小圆点需要通过计算间接算出来。例如左边中间的小圆点，计算公式为 <code>left: 0, top: height / 2</code>，其他小圆点同理。</p>
-<figure data-type="image" tabindex="4"><img src="https://panyu97py.github.io/post-images/1613498761944.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="4"><img src="https://blog.luyu.icu/post-images/1613498761944.png" alt="" loading="lazy"></figure>
 <h4 id="4-点击小圆点时可以进行放大缩小操作">4. 点击小圆点时，可以进行放大缩小操作。</h4>
 <pre><code class="language-js">handleMouseDownOnPoint(point) {
     const downEvent = window.event
@@ -490,7 +490,7 @@ getPointStyle(point) {
 <li>用新的 y 坐标减去原来的 y 坐标，就可以知道在纵轴方向的移动距离是多少。</li>
 <li>最后再将移动距离加上原来组件的高度，就可以得出新的组件高度。</li>
 <li>如果是正数，说明是往下拉，组件的高度在增加。如果是负数，说明是往上拉，组件的高度在减少。<br>
-<img src="https://panyu97py.github.io/post-images/1613498868658.gif" alt="" loading="lazy"></li>
+<img src="https://blog.luyu.icu/post-images/1613498868658.gif" alt="" loading="lazy"></li>
 </ol>
 <h3 id="6-撤消-重做">6. 撤消、重做</h3>
 <p>撤销重做的实现原理其实挺简单的，先看一下代码：</p>
@@ -542,10 +542,10 @@ recordSnapshot(state) {
 <li>不顶掉数据，在原来的快照中新增一条记录。用刚才的例子举例，e 不会把 cd 顶掉，而是在 cd 之前插入，即快照数据变为 [a, b, e, c, d]。</li>
 </ol>
 <p>我采用的是第一种方案。</p>
-<figure data-type="image" tabindex="5"><img src="https://panyu97py.github.io/post-images/1613499176409.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="5"><img src="https://blog.luyu.icu/post-images/1613499176409.gif" alt="" loading="lazy"></figure>
 <h3 id="7-吸附">7. 吸附</h3>
 <p>什么是吸附？就是在拖拽组件时，如果它和另一个组件的距离比较接近，就会自动吸附在一起。</p>
-<figure data-type="image" tabindex="6"><img src="https://panyu97py.github.io/post-images/1613499297871.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="6"><img src="https://blog.luyu.icu/post-images/1613499297871.gif" alt="" loading="lazy"></figure>
 <p>吸附的代码大概在 300 行左右，建议自己打开源码文件看（文件路径：<code>src\components\Editor\MarkLine.vue</code>）。这里不贴代码了，主要说说原理是怎么实现的。</p>
 <h4 id="标线">标线</h4>
 <p>在页面上创建 6 条线，分别是三横三竖。这 6 条线的作用是对齐，它们什么时候会出现呢？</p>
@@ -569,7 +569,7 @@ a.x + a.width == b.x + b.width
 <h4 id="吸附">吸附</h4>
 <h5 id="吸附效果是怎么实现的呢">吸附效果是怎么实现的呢？</h5>
 <p>假设现在有 ab 组件，a 组件坐标 xy 都是 0，宽高都是 100。现在假设 a 组件不动，我们正在拖拽 b 组件。当把 b 组件拖到坐标为<code>x: 0, y: 103</code> 时，由于<code>103 - 100 &lt;= 3(diff)</code>，所以可以判定它们已经接近得足够近。这时需要手动将 b 组件的 y 坐标值设为 100，这样就将 ab 组件吸附在一起了。</p>
-<figure data-type="image" tabindex="7"><img src="https://panyu97py.github.io/post-images/1613499573207.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="7"><img src="https://blog.luyu.icu/post-images/1613499573207.gif" alt="" loading="lazy"></figure>
 <h4 id="优化">优化</h4>
 <p>在拖拽时如果 6 条标线都显示出来会不太美观。所以我们可以做一下优化，在纵横方向上最多只同时显示一条线。实现原理如下：</p>
 <ol>
@@ -586,7 +586,7 @@ a.x + a.width == b.x + b.width
 // currX - startX &gt; 0 true 表示向右移动 false 表示向左移动
 eventBus.$emit('move', this.$el, currY - startY &gt; 0, currX - startX &gt; 0)
 </code></pre>
-<figure data-type="image" tabindex="8"><img src="https://panyu97py.github.io/post-images/1613499714989.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="8"><img src="https://blog.luyu.icu/post-images/1613499714989.gif" alt="" loading="lazy"></figure>
 <h3 id="8-组件属性设置">8. 组件属性设置</h3>
 <p>每个组件都有一些通用属性和独有的属性，我们需要提供一个能显示和修改属性的地方。</p>
 <pre><code class="language-js">// 每个组件数据大概是这样
@@ -609,7 +609,7 @@ eventBus.$emit('move', this.$el, currY - startY &gt; 0, currX - startX &gt; 0)
     },
 }
 </code></pre>
-<figure data-type="image" tabindex="9"><img src="https://panyu97py.github.io/post-images/1613499824580.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="9"><img src="https://blog.luyu.icu/post-images/1613499824580.png" alt="" loading="lazy"></figure>
 <p>我定义了一个 <code>AttrList</code> 组件，用于显示每个组件的属性。</p>
 <pre><code class="language-html">&lt;template&gt;
     &lt;div class=&quot;attr-list&quot;&gt;
@@ -637,7 +637,7 @@ eventBus.$emit('move', this.$el, currY - startY &gt; 0, currX - startX &gt; 0)
 </code></pre>
 <p>代码逻辑很简单，就是遍历组件的 <code>style</code> 对象，将每一个属性遍历出来。并且需要根据具体的属性用不同的组件显示出来，例如颜色属性，需要用颜色选择器显示；数值类的属性需要用 <code>type=number</code>的 <code>input</code> 组件显示等等。<br>
 为了方便用户修改属性值，我使用 <code>v-model</code> 将组件和值绑定在一起。</p>
-<figure data-type="image" tabindex="10"><img src="https://panyu97py.github.io/post-images/1613499927469.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="10"><img src="https://blog.luyu.icu/post-images/1613499927469.gif" alt="" loading="lazy"></figure>
 <h3 id="9-预览-保存代码">9. 预览、保存代码</h3>
 <p>预览和编辑的渲染原理是一样的，区别是不需要编辑功能。所以只需要将原先渲染组件的代码稍微改一下就可以了。</p>
 <pre><code class="language-js">&lt;!--页面组件列表展示--&gt;
@@ -674,7 +674,7 @@ eventBus.$emit('move', this.$el, currY - startY &gt; 0, currX - startX &gt; 0)
 <li>本地保存<br>
 在 DEMO 上我使用的 localStorage 保存在本地。</li>
 </ol>
-<figure data-type="image" tabindex="11"><img src="https://panyu97py.github.io/post-images/1613500069119.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="11"><img src="https://blog.luyu.icu/post-images/1613500069119.gif" alt="" loading="lazy"></figure>
 <h3 id="10-绑定事件">10. 绑定事件</h3>
 <p>每个组件有一个 <code>events</code> 对象，用于存储绑定的事件。目前我只定义了两个事件：</p>
 <ol>
@@ -723,7 +723,7 @@ export {
 
 </code></pre>
 <p>不过不能在编辑的时候触发，可以在预览的时候触发。</p>
-<figure data-type="image" tabindex="12"><img src="https://panyu97py.github.io/post-images/1613500164656.gif" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="12"><img src="https://blog.luyu.icu/post-images/1613500164656.gif" alt="" loading="lazy"></figure>
 <h4 id="添加事件">添加事件</h4>
 <p>通过 <code>v-for</code> 指令将事件列表渲染出来：</p>
 <pre><code class="language-html">&lt;el-tabs v-model=&quot;eventActiveName&quot;&gt;
@@ -859,7 +859,7 @@ import '@/styles/animate.css'
 ]
 </code></pre>
 <p>然后用<code>v-for</code>指令渲染出来动画列表。<br>
-<img src="https://panyu97py.github.io/post-images/1613500419330.gif" alt="" loading="lazy"></p>
+<img src="https://blog.luyu.icu/post-images/1613500419330.gif" alt="" loading="lazy"></p>
 <h4 id="添加动画">添加动画</h4>
 <pre><code class="language-html">&lt;el-tabs v-model=&quot;animationActiveName&quot;&gt;
     &lt;el-tab-pane v-for=&quot;item in animationClassData&quot; :key=&quot;item.label&quot; :label=&quot;item.label&quot; :name=&quot;item.label&quot;&gt;
@@ -959,7 +959,7 @@ import '@/styles/animate.css'
 <p>从以上代码可以发现，这些数据和 <code>css</code> 非常像。根据这一点，只需要写一个转换函数，将这些数据转换成我们组件所需的数据，就能实现 <code>PSD</code>文件转成渲染组件的功能。目前 <a href="https://github.com/huangwei9527/quark-h5"><code>quark-h5</code></a> 和 <a href="https://github.com/ly525/luban-h5"><code>luban-h5</code></a> 都是这样实现的 <code>PSD</code> 转换功能。</p>
 <h3 id="13-手机模式">13. 手机模式</h3>
 <p>由于画布是可以调整大小的，我们可以使用 iphone6 的分辨率来开发手机页面。</p>
-<figure data-type="image" tabindex="13"><img src="https://panyu97py.github.io/post-images/1613500731839.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="13"><img src="https://blog.luyu.icu/post-images/1613500731839.png" alt="" loading="lazy"></figure>
 <h3 id="总结">总结</h3>
 <p>由于 DEMO 的代码比较多，所以在讲解每一个功能点时，我只把关键代码贴上来。所以大家会发现 DEMO 的源码和我贴上来的代码会有些区别，请不必在意。</p>
 <p>另外，DEMO 的样式也比较简陋，主要是最近事情比较多，没太多时间写好看点，请见谅。</p>
@@ -968,7 +968,7 @@ import '@/styles/animate.css'
             
               <div class="tag-container">
                 
-                  <a href="https://panyu97py.github.io/tag/vue/" class="tag">
+                  <a href="https://blog.luyu.icu/tag/vue/" class="tag">
                     vue
                   </a>
                 
@@ -977,7 +977,7 @@ import '@/styles/animate.css'
             
               <div class="next-post">
                 <div class="next">下一篇</div>
-                <a href="https://panyu97py.github.io/post/xNPEyzRmb/">
+                <a href="https://blog.luyu.icu/post/xNPEyzRmb/">
                   <h3 class="post-title">
                     vue -- 事件总线 EventBus
                   </h3>
