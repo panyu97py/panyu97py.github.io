@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://blog.luyu.icu</id>
     <title>LuYu&apos;s Blog</title>
-    <updated>2021-02-18T03:24:30.213Z</updated>
+    <updated>2021-02-18T03:25:15.776Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://blog.luyu.icu"/>
     <link rel="self" href="https://blog.luyu.icu/atom.xml"/>
@@ -10,6 +10,25 @@
     <logo>https://blog.luyu.icu/images/avatar.png</logo>
     <icon>https://blog.luyu.icu/favicon.ico</icon>
     <rights>All rights reserved 2021, LuYu&apos;s Blog</rights>
+    <entry>
+        <title type="html"><![CDATA[ReactNative ios14看不见图片]]></title>
+        <id>https://blog.luyu.icu/post/0_AYxdlAp/</id>
+        <link href="https://blog.luyu.icu/post/0_AYxdlAp/">
+        </link>
+        <updated>2021-02-18T03:24:38.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="xcode升级12后reactnative-ios14看不见图片静态图片和网络图片">Xcode升级12后，ReactNative ios14看不见图片(静态图片和网络图片)</h2>
+<h3 id="解决方法">解决方法</h3>
+<h4 id="1-第一种修改node_modules中react-nativelibrariesimagerctuiimageviewanimatesm文件">1、第一种：修改node_modules中react-native/Libraries/Image/RCTUIImageViewAnimates.m文件</h4>
+<pre><code>if(_currentFrame){                   //275行
+    layer.contentsScale = self.animatedImageScale;
+    layer.contents = (__bridge id)_currentFrame.CGImage;
+}else{    //加上这个  不然ios14以上的系统看不见图片
+    [super displayLayer:layer];
+}
+</code></pre>
+<h4 id="2-第二种升级reactnative版本大于或者等于063版本">2、第二种：升级reactNative版本,大于或者等于0.63版本</h4>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[react native webview 的使用]]></title>
         <id>https://blog.luyu.icu/post/ZqSCJ18Us/</id>
@@ -2732,87 +2751,6 @@ for (let i = 0; i &lt; nums.length; i++) {
         }
         targetMap.set(nums[i],i)
     }
-};
-</code></pre>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[无重复字符的最长字串]]></title>
-        <id>https://blog.luyu.icu/post/SVgfv_u3l/</id>
-        <link href="https://blog.luyu.icu/post/SVgfv_u3l/">
-        </link>
-        <updated>2021-02-16T16:28:38.000Z</updated>
-        <content type="html"><![CDATA[<h3 id="题目描述">题目描述</h3>
-<p>给定一个字符串，请你找出其中不含有重复字符的 最长子串 的长度。</p>
-<h4 id="示例1">示例1</h4>
-<pre><code>输入: &quot;abcabcbb&quot;
-输出: 3 
-解释: 因为无重复字符的最长子串是 &quot;abc&quot;，所以其长度为 3。
-</code></pre>
-<h4 id="示例2">示例2</h4>
-<pre><code>输入: &quot;bbbbb&quot;
-输出: 1
-解释: 因为无重复字符的最长子串是 &quot;b&quot;，所以其长度为 1。
-</code></pre>
-<h4 id="示例-3">示例 3</h4>
-<pre><code>输入: &quot;pwwkew&quot;
-输出: 3
-解释: 因为无重复字符的最长子串是 &quot;wke&quot;，所以其长度为 3。
-     请注意，你的答案必须是 子串 的长度，&quot;pwke&quot; 是一个子序列，不是子串。
-</code></pre>
-<h3 id="题解">题解</h3>
-<h4 id="官方题解">官方题解</h4>
-<h5 id="思路">思路</h5>
-<p><img src="https://blog.luyu.icu/post-images/1613493014542.png" alt="" loading="lazy"><br>
-如上图所示相当于左右两个指针对字符串各循环了一次</p>
-<h5 id="代码">代码</h5>
-<pre><code>var lengthOfLongestSubstring = function(s) {
-    // 哈希集合，记录每个字符是否出现过
-    const occ = new Set();
-    const n = s.length;
-    // 右指针，初始值为 -1，相当于我们在字符串的左边界的左侧，还没有开始移动
-    let rk = -1, ans = 0;
-    for (let i = 0; i &lt; n; ++i) {
-        if (i != 0) {
-            // 左指针向右移动一格，移除一个字符
-            occ.delete(s.charAt(i - 1));
-        }
-        while (rk + 1 &lt; n &amp;&amp; !occ.has(s.charAt(rk + 1))) {
-            // 不断地移动右指针
-            occ.add(s.charAt(rk + 1));
-            ++rk;
-        }
-        // 第 i 到 rk 个字符是一个极长的无重复字符子串
-        ans = Math.max(ans, rk - i + 1);
-    }
-    return ans;
-};
-</code></pre>
-<h4 id="我的题解">我的题解</h4>
-<h5 id="思路-2">思路</h5>
-<p>获取字符串长度，并循环。每次循环判断map中是否存在key为该字符的值若不存在，将字符作为key，字符所在的位置作为value存入map中，若存在，则获取key为该字符的值将该值与当前的start做比较取较大的值作为start。每次循环计算长度（end-start+1）并与已存在的长度比较取较大的值。</p>
-<figure data-type="image" tabindex="1"><img src="https://blog.luyu.icu/post-images/1613493060500.png" alt="" loading="lazy"></figure>
-<h5 id="代码-2">代码</h5>
-<pre><code>/**
- * @param {string} s
- * @return {number}
- */
-var lengthOfLongestSubstring = function (s) {
-    let tempMap = new Map()
-    let start = 0
-    let length = 0
-    if(!s){
-      return 0
-    }
-    let len = s.length
-    for(let end = 0;end&lt;len;end++){
-      if(tempMap.has(s.charAt(end))){
-        start =Math.max(start,tempMap.get(s.charAt(end))+1) 
-      }
-      tempMap.set(s.charAt(end),end)
-      length = Math.max(length,end-start+1)
-    }
-    return length
 };
 </code></pre>
 ]]></content>
