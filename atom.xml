@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://blog.luyu.icu</id>
     <title>LuYu&apos;s Blog</title>
-    <updated>2021-02-17T15:30:04.358Z</updated>
+    <updated>2021-02-18T03:24:30.213Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://blog.luyu.icu"/>
     <link rel="self" href="https://blog.luyu.icu/atom.xml"/>
@@ -10,6 +10,99 @@
     <logo>https://blog.luyu.icu/images/avatar.png</logo>
     <icon>https://blog.luyu.icu/favicon.ico</icon>
     <rights>All rights reserved 2021, LuYu&apos;s Blog</rights>
+    <entry>
+        <title type="html"><![CDATA[react native webview 的使用]]></title>
+        <id>https://blog.luyu.icu/post/ZqSCJ18Us/</id>
+        <link href="https://blog.luyu.icu/post/ZqSCJ18Us/">
+        </link>
+        <updated>2021-02-18T03:24:13.000Z</updated>
+        <content type="html"><![CDATA[<h4 id="安装">安装</h4>
+<pre><code class="language-bash">yarn add react-native-webview 
+</code></pre>
+<h4 id="渲染远程-html-内容">渲染远程 HTML 内容</h4>
+<pre><code>import React, { Component } from 'react'; 
+import { View } from 'react-native'; 
+import { WebView } from 'react-native-webview'; 
+export default class App extends Component { 
+    render(){
+        return (
+            &lt;View&gt;
+                &lt;WebView source={{ uri: 'https://www.baidu.com' }} /&gt; 
+            &lt;/View&gt;
+        )
+    }
+} 
+</code></pre>
+<h4 id="渲染-html-字符串">渲染 HTML 字符串</h4>
+<pre><code>&lt;WebView 
+originWhitelist={['*']} 
+source={{ html: `&lt;h1&gt;这里是一个标题&lt;/h1&gt;` }} 
+/&gt; 
+</code></pre>
+<h4 id="根据内容自动计算高度">根据内容自动计算高度</h4>
+<p>往往我们无法提前预知 <code>HTML</code> 内容的高度，所以我们无法给其设置一个固定的高度，而是需要根据内容来设置其高度。</p>
+<p>为了达到这个目的，我们需要用到 <code>injectedJavaScript</code> 和 <code>onMessage</code></p>
+<h5 id="injectedjavascript">injectedJavaScript</h5>
+<p>这个属性的作用是设置一个在网页加载之前执行的 js 代码。</p>
+<h5 id="onmessage">onMessage</h5>
+<p>在 <code>webview</code> 内部的网页中调用 <code>window.postMessage</code> 方法时可以触发此属性对应的函数，从而实现网页和 <code>RN</code> 之间的数据交换。 设置此属性的同时会在 <code>webview</code> 中注入一个<code>postMessage</code> 的全局函数并覆盖可能已经存在的同名实现。</p>
+<p>网页端的 <code>window.postMessage</code> 只发送一个参数 <code>data</code>，此参数封装在 <code>RN</code> 端的 <code>event</code> 对象中，即 <code>event.nativeEvent.data</code>。<code>data</code> 只能是一个字符串。</p>
+<pre><code>import React, { Component } from 'react';
+import { View, ScrollView, SafeAreaView } from 'react-native';
+import { WebView } from 'react-native-webview';
+
+export default class App extends Component {
+  constructor(props) {
+    super(props);
+
+    this.state = { webViewHeight: 0 };
+  }
+
+  {/* 根据内容计算 WebView 高度 */}
+  onWebViewMessage = (event) =&gt; {
+    this.setState({ webViewHeight: Number(event.nativeEvent.data) });
+  }
+
+  render() {
+    const html = `&lt;p&gt;这里是一个标题&lt;/p&gt;`
+    const injectedJavaScript = `window.ReactNativeWebView.postMessage(document.documentElement.scrollHeight)`
+    return (
+      &lt;View style={{ flex: 1 }}&gt;
+        &lt;View style={{ height: 100, backgroundColor: 'yellow' }}&gt;&lt;/View&gt;
+        &lt;View style={{ height: this.state.webViewHeight }}&gt;
+          &lt;WebView
+            originWhitelist={['*']}
+            source={{ html }}
+            injectedJavaScript={{ injectedJavaScript }}
+            onMessage={this.onWebViewMessage}
+          /&gt;
+        &lt;/View&gt;
+        &lt;View style={{ height: 100, backgroundColor: 'green' }}&gt;&lt;/View&gt;
+      &lt;/View&gt;
+    )
+  }
+}
+</code></pre>
+<h4 id="采用响应式布局">采用响应式布局</h4>
+<pre><code>&lt;WebView
+  originWhitelist={['*']}
+  source={{ html: `
+  &lt;html&gt;
+    &lt;head&gt;
+      &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+    &lt;/head&gt;
+
+    &lt;body&gt;
+      &lt;p&gt;这里是一个标题&lt;/p&gt;
+    &lt;/body&gt;
+  &lt;/html&gt;
+  ` }}
+  injectedJavaScript='window.ReactNativeWebView.postMessage(document.documentElement.scrollHeight)'
+  onMessage={this.onWebViewMessage}
+/&gt;
+</code></pre>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[可视化拖拽组件库一些技术要点原理分析（三）]]></title>
         <id>https://blog.luyu.icu/post/-lcqVVhek/</id>
@@ -2721,79 +2814,6 @@ var lengthOfLongestSubstring = function (s) {
     }
     return length
 };
-</code></pre>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[两数相加]]></title>
-        <id>https://blog.luyu.icu/post/AcFQPeaQV/</id>
-        <link href="https://blog.luyu.icu/post/AcFQPeaQV/">
-        </link>
-        <updated>2021-02-16T16:28:05.000Z</updated>
-        <content type="html"><![CDATA[<h3 id="题目描述">题目描述</h3>
-<p>给出两个 非空 的链表用来表示两个非负的整数。其中，它们各自的位数是按照 逆序 的方式存储的，并且它们的每个节点只能存储 一位 数字。</p>
-<p>如果，我们将这两个数相加起来，则会返回一个新的链表来表示它们的和。</p>
-<p>您可以假设除了数字 0 之外，这两个数都不会以 0 开头。</p>
-<h4 id="示例">示例：</h4>
-<pre><code>输入：(2 -&gt; 4 -&gt; 3) + (5 -&gt; 6 -&gt; 4)
-输出：7 -&gt; 0 -&gt; 8
-原因：342 + 465 = 807
-</code></pre>
-<h3 id="题解">题解</h3>
-<h4 id="思路">思路：</h4>
-<p>首先我们根据代码注释可以了解到<code>l1</code>,<code>l2</code>的数据格式为：</p>
-<pre><code>{
-    val: 2,
-    next: {
-        val: 4,
-        next: {
-            val: 3,
-            next: null
-        }
-    }
-}
-</code></pre>
-<p>可以理解为每一个节点就是十进制的每一位，我们需要将每一位相加，若相加大于<code>10</code>则向下一位加一。</p>
-<pre><code>/*
- * @lc app=leetcode.cn id=2 lang=javascript
- *
- * [2] 两数相加
- */
-
-// @lc code=start
-/**
- * Definition for singly-linked list.
- * function ListNode(val) {
- *     this.val = val;
- *     this.next = null;
- * }
- */
-/**
- * @param {ListNode} l1
- * @param {ListNode} l2
- * @return {ListNode}
- */
-var addTwoNumbers = function (l1, l2) {
-    let node = new ListNode()
-    let temp = node
-    let sum = 0
-    let add = 0
-    // 循环直到l1和l2最后的节点
-    while (l1 || l2) {
-        sum = (l1 ? l1.val : 0) + (l2 ? l2.val : 0) + add;
-        temp.next = new ListNode(sum % 10);//取余
-        temp = temp.next;
-        add = sum &gt;= 10 ? 1 : 0;//记录下sum&gt;=10用于下一次循环加一
-        // 若l1 存在则将l1.next赋值给l1，l2同理
-        l1 &amp;&amp; (l1 = l1.next); 
-        l2 &amp;&amp; (l2 = l2.next);
-    }
-    // 当循环结束，l1与l2最后的节点相加的值 sum&gt;=10 则复制给 temp.next
-    add &amp;&amp; (temp.next = new ListNode(add));
-    return node.next
-};
-// @lc code=end
-
 </code></pre>
 ]]></content>
     </entry>
