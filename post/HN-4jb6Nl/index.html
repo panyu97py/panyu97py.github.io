@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" >
 
-<title>react native webview 的使用 | LuYu&#39;s Blog</title>
+<title>Vue+Electron项目搭建 | LuYu&#39;s Blog</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
@@ -24,13 +24,18 @@
 
 
 
-    <meta name="description" content="安装
-yarn add react-native-webview 
+    <meta name="description" content="创建项目
+vue create myproject
 
-渲染远程 HTML 内容
-import React, { Component } from 'react'; 
-import { View } from 'react-n..." />
-    <meta name="keywords" content="react-native" />
+进入项目目录
+cd myproject
+
+安装vue插件electron-builder
+vue add electron-builder
+
+运行项目
+yarn electron:ser..." />
+    <meta name="keywords" content="electron" />
   </head>
   <body>
     <div id="app" class="main">
@@ -105,102 +110,81 @@ import { View } from 'react-n..." />
       <div class="main-container">
         <div class="content-container" data-aos="fade-up">
           <div class="post-detail">
-            <h2 class="post-title">react native webview 的使用</h2>
-            <div class="post-date">2021-02-18</div>
+            <h2 class="post-title">Vue+Electron项目搭建</h2>
+            <div class="post-date">2021-02-23</div>
             
             <div class="post-content" v-pre>
-              <h4 id="安装">安装</h4>
-<pre><code class="language-bash">yarn add react-native-webview 
+              <h3 id="创建项目">创建项目</h3>
+<pre><code class="language-bash">vue create myproject
 </code></pre>
-<h4 id="渲染远程-html-内容">渲染远程 HTML 内容</h4>
-<pre><code>import React, { Component } from 'react'; 
-import { View } from 'react-native'; 
-import { WebView } from 'react-native-webview'; 
-export default class App extends Component { 
-    render(){
-        return (
-            &lt;View&gt;
-                &lt;WebView source={{ uri: 'https://www.baidu.com' }} /&gt; 
-            &lt;/View&gt;
-        )
+<h3 id="进入项目目录">进入项目目录</h3>
+<pre><code class="language-bash">cd myproject
+</code></pre>
+<h3 id="安装vue插件electron-builder">安装<code>vue</code>插件<code>electron-builder</code></h3>
+<pre><code class="language-bash">vue add electron-builder
+</code></pre>
+<h3 id="运行项目">运行项目</h3>
+<pre><code class="language-bash">yarn electron:serve
+</code></pre>
+<h3 id="修改目录结构">修改目录结构</h3>
+<blockquote>
+<p>根目录下创建 <code>Vue.config.js</code> 文件</p>
+</blockquote>
+<pre><code>├─.gitignore
+├─README.md
+├─Vue.config.js
+├─babel.config.js
+├─dataBase.db
+├─package.json
+├─webpack.config.js
+├─yarn.lock
+├─src
+|  ├─renderer
+|  |    ├─App.vue
+|  |    ├─main.js
+|  |    ├─views
+|  |    ├─utils
+|  |    ├─router
+|  |    ├─components
+|  |    └assets
+|  ├─main
+|  |  └index.js
+├─public
+|   ├─favicon.ico
+|   └index.html
+</code></pre>
+<pre><code class="language-js">const path = require('path')
+module.exports = {
+    pages: {
+        index: 'src/renderer/main.js',//vue入口文件，即 electron renderer进程入口
+    },
+    pluginOptions: {
+        electronBuilder: {
+            mainProcessFile: 'src/main/index.js',// electron mian 进程入口
+            mainProcessWatch: ['src/main'],
+            nodeIntegration: true,//是否启用node交互
+            // [1.0.0-rc.4+] Provide a list of arguments that Electron will be launched with during &quot;electron:serve&quot;,
+            // which can be accessed from the main process (src/background.js).
+            // Note that it is ignored when --debug flag is used with &quot;electron:serve&quot;, as you must launch Electron yourself
+            mainProcessArgs: []
+        }
+    },
+    configureWebpack: {
+        resolve: {
+            alias: {
+                &quot;@&quot;: path.join(__dirname, 'src')//别名配置
+            }
+        }
     }
-} 
-</code></pre>
-<h4 id="渲染-html-字符串">渲染 HTML 字符串</h4>
-<pre><code>&lt;WebView 
-originWhitelist={['*']} 
-source={{ html: `&lt;h1&gt;这里是一个标题&lt;/h1&gt;` }} 
-/&gt; 
-</code></pre>
-<h4 id="根据内容自动计算高度">根据内容自动计算高度</h4>
-<p>往往我们无法提前预知 <code>HTML</code> 内容的高度，所以我们无法给其设置一个固定的高度，而是需要根据内容来设置其高度。</p>
-<p>为了达到这个目的，我们需要用到 <code>injectedJavaScript</code> 和 <code>onMessage</code></p>
-<h5 id="injectedjavascript">injectedJavaScript</h5>
-<p>这个属性的作用是设置一个在网页加载之前执行的 js 代码。</p>
-<h5 id="onmessage">onMessage</h5>
-<p>在 <code>webview</code> 内部的网页中调用 <code>window.postMessage</code> 方法时可以触发此属性对应的函数，从而实现网页和 <code>RN</code> 之间的数据交换。 设置此属性的同时会在 <code>webview</code> 中注入一个<code>postMessage</code> 的全局函数并覆盖可能已经存在的同名实现。</p>
-<p>网页端的 <code>window.postMessage</code> 只发送一个参数 <code>data</code>，此参数封装在 <code>RN</code> 端的 <code>event</code> 对象中，即 <code>event.nativeEvent.data</code>。<code>data</code> 只能是一个字符串。</p>
-<pre><code>import React, { Component } from 'react';
-import { View, ScrollView, SafeAreaView } from 'react-native';
-import { WebView } from 'react-native-webview';
-
-export default class App extends Component {
-  constructor(props) {
-    super(props);
-
-    this.state = { webViewHeight: 0 };
-  }
-
-  {/* 根据内容计算 WebView 高度 */}
-  onWebViewMessage = (event) =&gt; {
-    this.setState({ webViewHeight: Number(event.nativeEvent.data) });
-  }
-
-  render() {
-    const html = `&lt;p&gt;这里是一个标题&lt;/p&gt;`
-    const injectedJavaScript = `window.ReactNativeWebView.postMessage(document.documentElement.scrollHeight)`
-    return (
-      &lt;View style={{ flex: 1 }}&gt;
-        &lt;View style={{ height: 100, backgroundColor: 'yellow' }}&gt;&lt;/View&gt;
-        &lt;View style={{ height: this.state.webViewHeight }}&gt;
-          &lt;WebView
-            originWhitelist={['*']}
-            source={{ html }}
-            injectedJavaScript={{ injectedJavaScript }}
-            onMessage={this.onWebViewMessage}
-          /&gt;
-        &lt;/View&gt;
-        &lt;View style={{ height: 100, backgroundColor: 'green' }}&gt;&lt;/View&gt;
-      &lt;/View&gt;
-    )
-  }
 }
-</code></pre>
-<h4 id="采用响应式布局">采用响应式布局</h4>
-<pre><code>&lt;WebView
-  originWhitelist={['*']}
-  source={{ html: `
-  &lt;html&gt;
-    &lt;head&gt;
-      &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
-    &lt;/head&gt;
-
-    &lt;body&gt;
-      &lt;p&gt;这里是一个标题&lt;/p&gt;
-    &lt;/body&gt;
-  &lt;/html&gt;
-  ` }}
-  injectedJavaScript='window.ReactNativeWebView.postMessage(document.documentElement.scrollHeight)'
-  onMessage={this.onWebViewMessage}
-/&gt;
 </code></pre>
 
             </div>
             
               <div class="tag-container">
                 
-                  <a href="https://blog.luyu.icu/tag/TFfhTEfXd/" class="tag">
-                    react-native
+                  <a href="https://blog.luyu.icu/tag/U3G8_wJhv/" class="tag">
+                    electron
                   </a>
                 
               </div>
@@ -208,9 +192,9 @@ export default class App extends Component {
             
               <div class="next-post">
                 <div class="next">下一篇</div>
-                <a href="https://blog.luyu.icu/post/-lcqVVhek/">
+                <a href="https://blog.luyu.icu/post/0_AYxdlAp/">
                   <h3 class="post-title">
-                    可视化拖拽组件库一些技术要点原理分析（三）
+                    ReactNative ios14看不见图片
                   </h3>
                 </a>
               </div>
