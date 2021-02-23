@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" >
 
-<title>Vue+Electron项目搭建 | LuYu&#39;s Blog</title>
+<title>electron+sqlite3 | LuYu&#39;s Blog</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
@@ -24,17 +24,12 @@
 
 
 
-    <meta name="description" content="创建项目
-vue create myproject
+    <meta name="description" content="安装
+yarn add sqlite3
 
-进入项目目录
-cd myproject
+开启node集成，很重要！！
 
-安装vue插件electron-builder
-vue add electron-builder
-
-运行项目
-yarn electron:ser..." />
+两种方式，如不开启会遇到Module not found: Can't resolve 'aws-sdk'和Cannot read property '_handle..." />
     <meta name="keywords" content="electron" />
   </head>
   <body>
@@ -110,73 +105,59 @@ yarn electron:ser..." />
       <div class="main-container">
         <div class="content-container" data-aos="fade-up">
           <div class="post-detail">
-            <h2 class="post-title">Vue+Electron项目搭建</h2>
+            <h2 class="post-title">electron+sqlite3</h2>
             <div class="post-date">2021-02-23</div>
             
             <div class="post-content" v-pre>
-              <h3 id="创建项目">创建项目</h3>
-<pre><code class="language-bash">vue create myproject
+              <h3 id="安装">安装</h3>
+<pre><code>yarn add sqlite3
 </code></pre>
-<h3 id="进入项目目录">进入项目目录</h3>
-<pre><code class="language-bash">cd myproject
-</code></pre>
-<h3 id="安装vue插件electron-builder">安装<code>vue</code>插件<code>electron-builder</code></h3>
-<pre><code class="language-bash">vue add electron-builder
-</code></pre>
-<h3 id="运行项目">运行项目</h3>
-<pre><code class="language-bash">yarn electron:serve
-</code></pre>
-<h3 id="修改目录结构">修改目录结构</h3>
+<h3 id="开启node集成很重要">开启<code>node</code>集成，很重要！！</h3>
 <blockquote>
-<p>根目录下创建 <code>Vue.config.js</code> 文件</p>
+<p>两种方式，如不开启会遇到<code>Module not found: Can't resolve 'aws-sdk'</code>和<code>Cannot read property '_handle' of undefined</code></p>
 </blockquote>
-<pre><code>├─.gitignore
-├─README.md
-├─Vue.config.js
-├─babel.config.js
-├─dataBase.db
-├─package.json
-├─webpack.config.js
-├─yarn.lock
-├─src
-|  ├─renderer
-|  |    ├─App.vue
-|  |    ├─main.js
-|  |    ├─views
-|  |    ├─utils
-|  |    ├─router
-|  |    ├─components
-|  |    └assets
-|  ├─main
-|  |  └index.js
-├─public
-|   ├─favicon.ico
-|   └index.html
-</code></pre>
-<pre><code class="language-js">const path = require('path')
+<h4 id="1通过-vue-cli-plugin-electron-builder-插件生成的electron">1.通过 <code>vue-cli-plugin-electron-builder</code> 插件生成的<code>electron</code></h4>
+<blockquote>
+<p>通过修改 <code>Vue.config.js</code>，增加 <code>nodeIntegration: true</code>。修改主进程中的配置</p>
+</blockquote>
+<pre><code>const path = require('path')
 module.exports = {
-    pages: {
-        index: 'src/renderer/main.js',//vue入口文件，即 electron renderer进程入口
-    },
+    // ···
     pluginOptions: {
         electronBuilder: {
-            mainProcessFile: 'src/main/index.js',// electron mian 进程入口
-            mainProcessWatch: ['src/main'],
-            nodeIntegration: true,//是否启用node交互
-            // [1.0.0-rc.4+] Provide a list of arguments that Electron will be launched with during &quot;electron:serve&quot;,
-            // which can be accessed from the main process (src/background.js).
-            // Note that it is ignored when --debug flag is used with &quot;electron:serve&quot;, as you must launch Electron yourself
-            mainProcessArgs: []
-        }
-    },
-    configureWebpack: {
-        resolve: {
-            alias: {
-                &quot;@&quot;: path.join(__dirname, 'src')//别名配置
-            }
+            nodeIntegration: true
         }
     }
+      // ···
 }
+
+</code></pre>
+<h4 id="2直接修改主进程">2.直接修改主进程</h4>
+<pre><code class="language-js">//...
+async function createWindow() {
+    // Create the browser window.
+    const win = new BrowserWindow({
+        width: 800,
+        height: 600,
+        webPreferences: {
+
+            // Use pluginOptions.nodeIntegration, leave this alone
+            // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
+         nodeIntegration:true// 修改或增加此处
+        }
+    })
+
+    if (process.env.WEBPACK_DEV_SERVER_URL) {
+        // Load the url of the dev server if in development mode
+        await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
+        if (!process.env.IS_TEST) win.webContents.openDevTools()
+    } else {
+        createProtocol('app')
+        // Load the index.html when not in development
+        win.loadURL('app://./index.html')
+    }
+}
+//...
 </code></pre>
 
             </div>
@@ -192,9 +173,9 @@ module.exports = {
             
               <div class="next-post">
                 <div class="next">下一篇</div>
-                <a href="https://blog.luyu.icu/post/0_AYxdlAp/">
+                <a href="https://blog.luyu.icu/post/HN-4jb6Nl/">
                   <h3 class="post-title">
-                    ReactNative ios14看不见图片
+                    Vue+Electron项目搭建
                   </h3>
                 </a>
               </div>

@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://blog.luyu.icu</id>
     <title>LuYu&apos;s Blog</title>
-    <updated>2021-02-23T02:35:45.728Z</updated>
+    <updated>2021-02-23T02:51:14.093Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://blog.luyu.icu"/>
     <link rel="self" href="https://blog.luyu.icu/atom.xml"/>
@@ -10,6 +10,64 @@
     <logo>https://blog.luyu.icu/images/avatar.png</logo>
     <icon>https://blog.luyu.icu/favicon.ico</icon>
     <rights>All rights reserved 2021, LuYu&apos;s Blog</rights>
+    <entry>
+        <title type="html"><![CDATA[electron+sqlite3]]></title>
+        <id>https://blog.luyu.icu/post/y6n5hZ0Fy/</id>
+        <link href="https://blog.luyu.icu/post/y6n5hZ0Fy/">
+        </link>
+        <updated>2021-02-23T02:36:20.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="安装">安装</h3>
+<pre><code>yarn add sqlite3
+</code></pre>
+<h3 id="开启node集成很重要">开启<code>node</code>集成，很重要！！</h3>
+<blockquote>
+<p>两种方式，如不开启会遇到<code>Module not found: Can't resolve 'aws-sdk'</code>和<code>Cannot read property '_handle' of undefined</code></p>
+</blockquote>
+<h4 id="1通过-vue-cli-plugin-electron-builder-插件生成的electron">1.通过 <code>vue-cli-plugin-electron-builder</code> 插件生成的<code>electron</code></h4>
+<blockquote>
+<p>通过修改 <code>Vue.config.js</code>，增加 <code>nodeIntegration: true</code>。修改主进程中的配置</p>
+</blockquote>
+<pre><code>const path = require('path')
+module.exports = {
+    // ···
+    pluginOptions: {
+        electronBuilder: {
+            nodeIntegration: true
+        }
+    }
+      // ···
+}
+
+</code></pre>
+<h4 id="2直接修改主进程">2.直接修改主进程</h4>
+<pre><code class="language-js">//...
+async function createWindow() {
+    // Create the browser window.
+    const win = new BrowserWindow({
+        width: 800,
+        height: 600,
+        webPreferences: {
+
+            // Use pluginOptions.nodeIntegration, leave this alone
+            // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
+         nodeIntegration:true// 修改或增加此处
+        }
+    })
+
+    if (process.env.WEBPACK_DEV_SERVER_URL) {
+        // Load the url of the dev server if in development mode
+        await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
+        if (!process.env.IS_TEST) win.webContents.openDevTools()
+    } else {
+        createProtocol('app')
+        // Load the index.html when not in development
+        win.loadURL('app://./index.html')
+    }
+}
+//...
+</code></pre>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[Vue+Electron项目搭建]]></title>
         <id>https://blog.luyu.icu/post/HN-4jb6Nl/</id>
@@ -2680,74 +2738,6 @@ The legacy build system is still available in Xcode 10. To use the legacy build 
 <h5 id="2-copy-pods-resources-2">2. Copy Pods Resources</h5>
 <p>在 <code>target</code> -&gt; <code>Build phase</code> -&gt; <code>Copy Pods Resources</code> -&gt; <code>Output Files</code>，移除<code>${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}</code></p>
 <figure data-type="image" tabindex="3"><img src="https://blog.luyu.icu/post-images/1613494090242.png" alt="" loading="lazy"></figure>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[寻找两个正序数组的中位数]]></title>
-        <id>https://blog.luyu.icu/post/d6wdVAP5_/</id>
-        <link href="https://blog.luyu.icu/post/d6wdVAP5_/">
-        </link>
-        <updated>2021-02-16T16:44:09.000Z</updated>
-        <content type="html"><![CDATA[<h3 id="题目描述">题目描述</h3>
-<p>给定两个大小为 <code>m</code> 和 <code>n</code> 的正序（从小到大）数组 <code>nums1</code> 和 <code>nums2</code>。</p>
-<p>请你找出这两个正序数组的中位数，并且要求算法的时间复杂度为<code>O(log(m + n))</code>。</p>
-<p>你可以假设 <code>nums1</code> 和 <code>nums2</code> 不会同时为空。</p>
-<p></p>
-<h4 id="示例1">示例1</h4>
-<pre><code>nums1 = [1, 3]
-nums2 = [2]
-
-则中位数是 2.0
-</code></pre>
-<h4 id="示例-2">示例 2</h4>
-<pre><code>nums1 = [1, 2]
-nums2 = [3, 4]
-
-则中位数是 (2 + 3)/2 = 2.5
-</code></pre>
-<h4 id="题解">题解</h4>
-<h5 id="题解一暴力解法">题解一：暴力解法</h5>
-<h6 id="思路">思路</h6>
-<p>根据题目描述及示例我们可以知道，用 len 表示合并后数组的长度如果是奇数，我们需要知道第 <code>（len+1）/2</code> 个数就可以了，如果遍历的话需要遍历 <code>Math.floor(len/2 ) + 1</code> 次。如果是偶数，我们需要知道第 <code>len/2</code>和 <code>len/2+1</code> 个数的值，也是需要遍历 <code>len/2+1</code> 次。所以遍历的话，奇数和偶数都是 <code>len/2+1</code> 次。</p>
-<p>即：</p>
-<ul>
-<li>若<code>len%2===1</code>中位数就是位于合并后数组<code>Math.floor(len/2)+1</code>的数字。</li>
-<li>若<code>(m+n)%2===0</code>中位数就是位于合并后数组<code>len/2</code>和<code>len/2+1</code>的数字的平均数。<br>
-所以我们需要做的就是排序就可以了,这里我们采用指针法排序这样最多只需要移动<code>len/2+1</code>就能获得答案。<br>
-时间复杂度：遍历 <code>len/2+1</code> 次，<code>len=m+n</code>，所以时间复杂度是 <code>O(m+n)</code>。</li>
-</ul>
-<p>空间复杂度：我们申请了常数个变量，也就是<code>m</code>，<code>n</code>，<code>len</code>，<code>pointer1</code>，<code>pointer2</code>，<code>newVal</code>，<code>oldVal</code> 以及 <code>i</code>。</p>
-<p>总共 8 个变量，所以空间复杂度是 <code>O(1)</code>。</p>
-<p>但这并不符合题目中要求的时间复杂度<code>O(log(m + n))</code></p>
-<h6 id="代码">代码</h6>
-<pre><code>/**
- * @param {number[]} nums1
- * @param {number[]} nums2
- * @return {number}
- */
-var findMedianSortedArrays = function (nums1, nums2) {
-    let m = nums1.length
-    let n = nums2.length
-    let len = m + n
-    let pointer1 = 0, pointer2 = 0
-    let newVal, oldVal
-    for (let i = 0; i &lt;= len / 2; i++) {
-        oldVal = newVal
-        if (pointer1 &lt; m &amp;&amp; (nums1[pointer1] &lt;= nums2[pointer2] || pointer2 &gt;= n)) {
-            newVal = nums1[pointer1++]
-        } else {
-            newVal = nums2[pointer2++]
-        }
-    }
-    if ((len % 2) === 0) {
-        return (newVal + oldVal) / 2
-    } else {
-        return newVal
-    }
-};
-</code></pre>
-<h5 id="题解二二分法">题解二：二分法</h5>
-<p>未完待续。。。</p>
 ]]></content>
     </entry>
 </feed>
