@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://blog.luyu.icu</id>
     <title>LuYu&apos;s Blog</title>
-    <updated>2021-02-23T02:51:14.093Z</updated>
+    <updated>2021-02-23T03:00:09.929Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://blog.luyu.icu"/>
     <link rel="self" href="https://blog.luyu.icu/atom.xml"/>
@@ -25,14 +25,14 @@
 </blockquote>
 <h4 id="1通过-vue-cli-plugin-electron-builder-插件生成的electron">1.通过 <code>vue-cli-plugin-electron-builder</code> 插件生成的<code>electron</code></h4>
 <blockquote>
-<p>通过修改 <code>Vue.config.js</code>，增加 <code>nodeIntegration: true</code>。修改主进程中的配置</p>
+<p>通过修改 <code>Vue.config.js</code>,修改主进程中的配置.</p>
 </blockquote>
 <pre><code>const path = require('path')
 module.exports = {
     // ···
     pluginOptions: {
         electronBuilder: {
-            nodeIntegration: true
+            nodeIntegration: true//增加或修改此处
         }
     }
       // ···
