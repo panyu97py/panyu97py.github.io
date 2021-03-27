@@ -3,12 +3,12 @@
   <head>
     <meta charset="utf-8" >
 
-<title>VUE CLI3 结合 cross-env 配置环境变量 | LuYu&#39;s Blog</title>
+<title>VUE CLI2 结合 cross-env 配置环境变量 | LuYu&#39;s Blog</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-<link rel="shortcut icon" href="https://blog.luyu.icu/favicon.ico?v=1616840764869">
+<link rel="shortcut icon" href="https://blog.luyu.icu/favicon.ico?v=1616863320816">
 <link rel="stylesheet" href="https://blog.luyu.icu/styles/main.css">
 
 
@@ -24,11 +24,14 @@
 
 
 
-    <meta name="description" content="'use strict'
-const merge = require('webpack-merge')
-const prodEnv = require('./prod.env')
+    <meta name="description" content="安装
+yarn add cross-env
+npm install cross-env --save
 
-module.exports = merge(prodEn..." />
+相关配置
+config/dev.env.js
+'use strict'
+const merge = require('webpack-m..." />
     <meta name="keywords" content="" />
   </head>
   <body>
@@ -38,7 +41,7 @@ module.exports = merge(prodEn..." />
   <div class="top-container" data-aos="fade-right">
     <div class="top-header-container">
       <a class="site-title-container" href="https://blog.luyu.icu">
-        <img src="https://blog.luyu.icu/images/avatar.png?v=1616840764869" class="site-logo">
+        <img src="https://blog.luyu.icu/images/avatar.png?v=1616863320816" class="site-logo">
         <h1 class="site-title">LuYu&#39;s Blog</h1>
       </a>
       <div class="menu-btn" @click="menuVisible = !menuVisible">
@@ -104,11 +107,17 @@ module.exports = merge(prodEn..." />
       <div class="main-container">
         <div class="content-container" data-aos="fade-up">
           <div class="post-detail">
-            <h2 class="post-title">VUE CLI3 结合 cross-env 配置环境变量</h2>
+            <h2 class="post-title">VUE CLI2 结合 cross-env 配置环境变量</h2>
             <div class="post-date">2021-03-27</div>
             
             <div class="post-content" v-pre>
-              <pre><code>'use strict'
+              <h3 id="安装">安装</h3>
+<pre><code>yarn add cross-env
+npm install cross-env --save
+</code></pre>
+<h3 id="相关配置">相关配置</h3>
+<h4 id="configdevenvjs">config/dev.env.js</h4>
+<pre><code>'use strict'
 const merge = require('webpack-merge')
 const prodEnv = require('./prod.env')
 
@@ -116,7 +125,38 @@ module.exports = merge(prodEnv, {
   NODE_ENV: '&quot;development&quot;',
   API_ENV: `&quot;${process.env.API_ENV}&quot;`
 })
-
+</code></pre>
+<h4 id="configprodenvjs">config/prod.env.js</h4>
+<pre><code>'use strict'
+module.exports = {
+  NODE_ENV: '&quot;production&quot;',
+  API_ENV: `&quot;${process.env.API_ENV}&quot;`
+}
+</code></pre>
+<h4 id="packagejson">package.json</h4>
+<pre><code>{
+    //……
+    &quot;scripts&quot;:{
+        &quot;dev&quot;: &quot;cross-env API_ENV=dev webpack-dev-server --inline --progress --config build/webpack.dev.conf.js&quot;,
+        &quot;prod&quot;: &quot;cross-env API_ENV=prod webpack-dev-server --inline --progress --config build/webpack.dev.conf.js&quot;,
+        &quot;alpha&quot;: &quot;cross-env API_ENV=alpha webpack-dev-server --inline --progress --config build/webpack.dev.conf.js&quot;,
+        &quot;start&quot;: &quot;npm run dev&quot;,
+        &quot;lint&quot;: &quot;eslint --fix --ext .js,.vue src&quot;,
+        &quot;build:dev&quot;: &quot;cross-env API_ENV=dev node build/build.js&quot;,
+        &quot;build:prod&quot;: &quot;cross-env API_ENV=prod node build/build.js&quot;,
+        &quot;build:alpha&quot;: &quot;cross-env API_ENV=alpha node build/build.js&quot;,
+        &quot;build:alpha_analyz&quot;: &quot;npm_config_report=true npm run build:alpha&quot;
+    },
+     &quot;dependencies&quot;: {
+         //……
+        &quot;cross-env&quot;: &quot;^5.2.0&quot;,
+         //……
+     }
+     //……
+}
+</code></pre>
+<h3 id="项目中使用">项目中使用</h3>
+<pre><code>process.env.API_ENV
 </code></pre>
 
             </div>
