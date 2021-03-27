@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" >
 
-<title>关于 | LuYu&#39;s Blog</title>
+<title>VUE CLI3 结合 cross-env 配置环境变量 | LuYu&#39;s Blog</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
@@ -24,8 +24,11 @@
 
 
 
-    <meta name="description" content="。。。
-" />
+    <meta name="description" content="'use strict'
+const merge = require('webpack-merge')
+const prodEnv = require('./prod.env')
+
+module.exports = merge(prodEn..." />
     <meta name="keywords" content="" />
   </head>
   <body>
@@ -101,14 +104,32 @@
       <div class="main-container">
         <div class="content-container" data-aos="fade-up">
           <div class="post-detail">
-            <h2 class="post-title">关于</h2>
-            <div class="post-date">2021-02-16</div>
+            <h2 class="post-title">VUE CLI3 结合 cross-env 配置环境变量</h2>
+            <div class="post-date">2021-03-27</div>
             
             <div class="post-content" v-pre>
-              <p>。。。</p>
+              <pre><code>'use strict'
+const merge = require('webpack-merge')
+const prodEnv = require('./prod.env')
+
+module.exports = merge(prodEnv, {
+  NODE_ENV: '&quot;development&quot;',
+  API_ENV: `&quot;${process.env.API_ENV}&quot;`
+})
+
+</code></pre>
 
             </div>
             
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://blog.luyu.icu/post/J93PXoBK_/">
+                  <h3 class="post-title">
+                    React Native之配置URL Scheme
+                  </h3>
+                </a>
+              </div>
             
 
             
