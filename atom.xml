@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://blog.luyu.icu</id>
     <title>LuYu&apos;s Blog</title>
-    <updated>2021-03-27T16:52:36.337Z</updated>
+    <updated>2021-03-27T17:09:44.528Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://blog.luyu.icu"/>
     <link rel="self" href="https://blog.luyu.icu/atom.xml"/>
@@ -17,12 +17,12 @@
         </link>
         <updated>2021-03-27T10:25:05.000Z</updated>
         <content type="html"><![CDATA[<h3 id="安装">安装</h3>
-<pre><code>yarn add cross-env
+<pre><code class="language-bash">yarn add cross-env
 npm install cross-env --save
 </code></pre>
 <h3 id="相关配置">相关配置</h3>
 <h4 id="configdevenvjs">config/dev.env.js</h4>
-<pre><code>'use strict'
+<pre><code class="language-js">'use strict'
 const merge = require('webpack-merge')
 const prodEnv = require('./prod.env')
 
@@ -32,14 +32,14 @@ module.exports = merge(prodEnv, {
 })
 </code></pre>
 <h4 id="configprodenvjs">config/prod.env.js</h4>
-<pre><code>'use strict'
+<pre><code class="language-js">'use strict'
 module.exports = {
   NODE_ENV: '&quot;production&quot;',
   API_ENV: `&quot;${process.env.API_ENV}&quot;`
 }
 </code></pre>
 <h4 id="packagejson">package.json</h4>
-<pre><code>{
+<pre><code class="language-json">{
     //……
     &quot;scripts&quot;:{
         &quot;dev&quot;: &quot;cross-env API_ENV=dev webpack-dev-server --inline --progress --config build/webpack.dev.conf.js&quot;,
@@ -61,7 +61,7 @@ module.exports = {
 }
 </code></pre>
 <h3 id="项目中使用">项目中使用</h3>
-<pre><code>process.env.API_ENV
+<pre><code class="language-js">process.env.API_ENV
 </code></pre>
 ]]></content>
     </entry>
