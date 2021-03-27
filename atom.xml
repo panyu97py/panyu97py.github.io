@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://blog.luyu.icu</id>
     <title>LuYu&apos;s Blog</title>
-    <updated>2021-02-23T03:00:09.929Z</updated>
+    <updated>2021-03-27T10:23:56.143Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://blog.luyu.icu"/>
     <link rel="self" href="https://blog.luyu.icu/atom.xml"/>
@@ -10,6 +10,113 @@
     <logo>https://blog.luyu.icu/images/avatar.png</logo>
     <icon>https://blog.luyu.icu/favicon.ico</icon>
     <rights>All rights reserved 2021, LuYu&apos;s Blog</rights>
+    <entry>
+        <title type="html"><![CDATA[React Native之配置URL Scheme]]></title>
+        <id>https://blog.luyu.icu/post/J93PXoBK_/</id>
+        <link href="https://blog.luyu.icu/post/J93PXoBK_/">
+        </link>
+        <updated>2021-03-18T06:56:14.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="url-scheme-有什么作用"><code>URL Scheme</code> 有什么作用</h3>
+<p>需要在网站中打开/唤起<code>APP</code>,或其他<code>APP</code>中打开<code>APP</code>,则需要设置<code>URL Scheme</code>。比如微信的是：<code>weixin://</code></p>
+<h3 id="url-scheme介绍"><code>URL Scheme</code>介绍</h3>
+<h4 id="url-scheme是什么"><code>URL Scheme</code>是什么？</h4>
+<p><code>URL Scheme</code>是一种页面内跳转协议，是一种非常好的实现机制，通过定义自己的<code>scheme</code>协议，可以非常方便跳转<code>APP</code>中的各个页面；通过<code>scheme</code>协议，服务器可以定制化告诉<code>APP</code>跳转那个页面，可以通过通知栏消息定制化跳转页面，可以通过<code>H5</code>页面跳转页面等。</p>
+<p>苹果手机中的<code>APP</code>都有一个沙盒，<code>APP</code>就是一个信息孤岛，相互是不可以进行通信的。但是<code>iOS</code>的<code>APP</code>可以注册自己的<code>URL Scheme</code>，<code>URL Scheme</code>是为方便<code>APP</code>之间互相调用而设计的。</p>
+<p><code>URL Scheme</code>必须能唯一标识一个<code>APP</code>，如果你设置的<code>URL Scheme</code>与别的<code>APP</code>的<code>URL Scheme</code>冲突时，你的<code>APP</code>不一定会被启动起来。因为当你的<code>APP</code>在安装的时候，系统里面已经注册了你的<code>URL Scheme</code>。</p>
+<h4 id="url-scheme应用场景"><code>URL Scheme</code>应用场景</h4>
+<p>客户端应用可以向操作系统注册一个 URL scheme，该 scheme 用于从浏览器或其他应用中启动本应用。通过指定的 URL 字段，可以让应用在被调起后直接打开某些特定页面，比如商品详情页、活动详情页等等。也可以执行某些指定动作，如完成支付等。也可以在应用内通过 html 页来直接调用显示 app 内的某个页面。综上URL Scheme使用场景大致分以下几种：</p>
+<ol>
+<li>服务器下发跳转路径，客户端根据服务器下发跳转路径跳转相应的页面</li>
+<li>H5页面点击锚点，根据锚点具体跳转路径<code>APP</code>端跳转具体的页面</li>
+<li><code>APP</code>端收到服务器端下发的PUSH通知栏消息，根据消息的点击跳转路径跳转相关页面</li>
+<li><code>APP</code>根据<code>URL</code>跳转到另外一个<code>APP</code>指定页面</li>
+</ol>
+<h4 id="url-scheme的协议格式"><code>URL Scheme</code>的协议格式</h4>
+<pre><code>opengs://tasks:8088/tasksDetail?tasksId=102
+</code></pre>
+<p>通过上面的路径 <code>Scheme</code>、<code>Host</code>、<code>port</code>、<code>path</code>、<code>query</code>全部包含，基本上平时使用路径就是这样子的。</p>
+<ol>
+<li><code>opengs</code> 代表该 <code>Scheme</code> 协议名称</li>
+<li><code>tasks</code> 代表<code>Scheme</code>作用于哪个地址域</li>
+<li><code>tasksDetail</code>代表<code>Scheme</code>指定的页面</li>
+<li><code>tasksId</code>代表传递的参数</li>
+<li><code>8088</code>代表该路径的端口号</li>
+</ol>
+<h3 id="url-scheme配置">URL Scheme配置</h3>
+<h4 id="安卓配置">安卓配置</h4>
+<blockquote>
+<p>URL Scheme的使用要先在AndroidManifest.xml中配置能接受Scheme方式启动的activity</p>
+</blockquote>
+<pre><code>        &lt;activity
+                android:name=&quot;.MainActivity&quot;
+                android:configChanges=&quot;keyboard|keyboardHidden|orientation|screenSize&quot;
+                android:label=&quot;@string/app_name&quot;
+                android:screenOrientation=&quot;portrait&quot;
+                android:windowSoftInputMode=&quot;adjustResize&quot;&gt;
+            &lt;intent-filter&gt;
+                &lt;action android:name=&quot;android.intent.action.MAIN&quot;/&gt;
+                &lt;!--如果没有这行配置app安装后将无法在安卓手机中显示--&gt;
+                &lt;category android:name=&quot;android.intent.category.LAUNCHER&quot;/&gt;
+
+            &lt;/intent-filter&gt;
+            &lt;!-- 同一个intent-filter设置了多个category,会导致打包安装后出现了APP图标消失问题，所以这里要分成分两个intent-filter--&gt;
+            &lt;intent-filter&gt;
+                &lt;!--  Scheme 协议名称--&gt;
+                &lt;data android:scheme=&quot;scheme&quot;/&gt;
+                &lt;action android:name=&quot;android.intent.action.VIEW&quot;/&gt;
+                &lt;!--如果希望该应用可以通过浏览器的连接启动，则添加该项--&gt;
+                &lt;category android:name=&quot;android.intent.category.BROWSABLE&quot;/&gt;
+                &lt;!--表示该页面可以被隐式调用，必须加上该项--&gt;
+                &lt;category android:name=&quot;android.intent.category.DEFAULT&quot;/&gt;
+            &lt;/intent-filter&gt;
+        &lt;/activity&gt;
+</code></pre>
+<h4 id="ios-配置">IOS 配置</h4>
+<blockquote>
+<p>注册URL Scheme，即配置info.plist 文件即可</p>
+</blockquote>
+<figure data-type="image" tabindex="1"><img src="https://blog.luyu.icu/post-images/1616839419653.jpg" alt="" loading="lazy"></figure>
+<h3 id="调用方式">调用方式</h3>
+<h4 id="web端调用">web端调用</h4>
+<ol>
+<li>js 调起</li>
+</ol>
+<pre><code>window.open('opengs://tasks:8088/tasksDetail?tasksId=102')
+</code></pre>
+<ol start="2">
+<li>a标签调起</li>
+</ol>
+<pre><code>&lt;a href=&quot;opengs://tasks:8088/tasksDetail?tasksId=102&quot;&gt;
+</code></pre>
+<h4 id="安卓原生调用">安卓原生调用</h4>
+<pre><code>Intent intent = new Intent(Intent.ACTION_VIEW,Uri.parse(&quot;opengs://tasks:8088/tasksDetail?tasksId=102&quot;));
+startActivity(intent);
+</code></pre>
+<h4 id="ios原生调用">ios原生调用</h4>
+<pre><code> NSString *url = @&quot;opengs://&quot;;
+ //    NSString *url = @&quot;opengs://com.opengs.www&quot;;
+ if ([[UIApplication sharedApplication]
+      canOpenURL:[NSURL URLWithString:url]])
+ {
+     [[UIApplication sharedApplication] openURL:[NSURL URLWithString:url]];
+ }
+ else
+ {
+     NSLog(@&quot;can not open URL scheme opengs&quot;);
+ }
+</code></pre>
+<h4 id="react-native-调用">react-native 调用</h4>
+<pre><code>import { Linking } from 'react-native'
+// ……
+_openUrl =async ()=&gt;{
+    const url = &quot;&quot;
+    const supported = await  Linking.canOpenURL(url)
+    if(!supported)return 
+    return   Linking.openURL(url)
+}
+</code></pre>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[electron+sqlite3]]></title>
         <id>https://blog.luyu.icu/post/y6n5hZ0Fy/</id>
@@ -2680,64 +2787,6 @@ this.$bus.$on('nameOfEvent',($event) =&gt; {
 <pre><code>-webkit-backface-visibility: hidden;
 -webkit-transform: translate3d(0, 0, 0);
 </code></pre>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[Xcode 10 中关于 Error: Multiple commands produce]]></title>
-        <id>https://blog.luyu.icu/post/AVegNSKtq/</id>
-        <link href="https://blog.luyu.icu/post/AVegNSKtq/">
-        </link>
-        <updated>2021-02-16T16:45:43.000Z</updated>
-        <content type="html"><![CDATA[<p>本文摘自<a href="https://www.jianshu.com/p/fdb1421f3c8b">简书</a></p>
-<p>更新<code>Xcode 10</code>，自然开始第一时间运行老项目，踩坑填坑</p>
-<h3 id="这边记录下基本出现的问题">这边记录下基本出现的问题</h3>
-<blockquote>
-<p><code>Error: Multiple commands produce</code></p>
-</blockquote>
-<p>Xcode 10 与本问题相关的一个更新点。</p>
-<blockquote>
-<p>Build System<br>
-Again, Xcode 10 uses a new build system. The new build system provides improved reliability and build performance, and it catches project configuration problems that the legacy build system does not.<br>
-The legacy build system is still available in Xcode 10. To use the legacy build system, select it in the File &gt; Project/Workspace Settings sheet. Projects configured to use the legacy build system will display an orange hammer icon in the Activity View.</p>
-</blockquote>
-<p>简单而言，<code>Xcode10</code>使用了一个的新创建系统，比之前的提供更好的可靠性与创建性能，而且可以获取项目配置问题（默认设置新创建系统）</p>
-<p>在苹果文档中，提及<code>Xcode10</code>中的关于旧项目<code>New Build System</code>更改适配中提及到以下两点</p>
-<ul>
-<li>
-<p>The new build system has stricter checks for cycles between elements in the build in order to prevent unnecessary rebuilds.</p>
-</li>
-<li>
-<p>It is an error for any individual file in the build to be produced by more than one build command. For example, if two targets each declare the same output file from a shell script phase, factor out the declaration of the output file into a single target.</p>
-</li>
-</ul>
-<p><code>New Build System</code>会对构建中的元素循环进行严格的检查，避免不必要的重建，这个也是错误出现的原因。</p>
-<h3 id="错误发生的两种普遍形式">错误发生的两种普遍形式：</h3>
-<h4 id="1-infoplist">1. <code>info.plist</code></h4>
-<blockquote>
-<p>错误信息</p>
-</blockquote>
-<pre><code>Multiple commands produce '/Users/tjsoft/Library/Developer/Xcode/DerivedData/TYKYTwoLearnOneDo-amcfzswumxdotlgjwdslugmywxch/Build/Products/Debug-iphoneos/TYKYTwoLearnOneDo.app/Info.plist':
-1) Target 'TYKYTwoLearnOneDo' (project 'TYKYTwoLearnOneDo') has copy command from '/Users/tjsoft/TYKY /党建/黔纪/QianJiDangJian_iOS/TYKYTwoLearnOneDo/Info.plist' to '/Users/tjsoft/Library/Developer/Xcode/DerivedData/TYKYTwoLearnOneDo-amcfzswumxdotlgjwdslugmywxch/Build/Products/Debug-iphoneos/TYKYTwoLearnOneDo.app/Info.plist'
-2) Target 'TYKYTwoLearnOneDo' (project 'TYKYTwoLearnOneDo') has process command with output '/Users/tjsoft/Library/Developer/Xcode/DerivedData/TYKYTwoLearnOneDo-amcfzswumxdotlgjwdslugmywxch/Build/Products/Debug-iphoneos/TYKYTwoLearnOneDo.app/Info.plist'
-</code></pre>
-<h4 id="2-copy-pods-resources">2. <code>Copy Pods Resources</code></h4>
-<blockquote>
-<p>错误信息</p>
-</blockquote>
-<pre><code>Multiple commands produce '/Users/tjsoft/Library/Developer/Xcode/DerivedData/TYKYTwoLearnOneDo-amcfzswumxdotlgjwdslugmywxch/Build/Products/Debug-iphoneos/TYKYTwoLearnOneDo.app':
-1) Target 'TYKYTwoLearnOneDo' has create directory command with output '/Users/tjsoft/Library/Developer/Xcode/DerivedData/TYKYTwoLearnOneDo-amcfzswumxdotlgjwdslugmywxch/Build/Products/Debug-iphoneos/TYKYTwoLearnOneDo.app'
-2) That command depends on command in Target 'TYKYTwoLearnOneDo': script phase “[CP] Copy Pods Resources”
-</code></pre>
-<h3 id="解决方法可以有两种">解决方法可以有两种:</h3>
-<h4 id="1-一种是不使用new-build-system在file-projectworkspace-settings中的share-projectworkspace-settings里build-system将new-build-systemdefault切换成legacy-build-system">1. 一种是不使用<code>New Build System</code>，在<code>File</code> &gt; <code>Project/Workspace Settings</code>中的<code>Share Project/Workspace Settings</code>里<code>build system</code>将<code>New Build System(Default)</code>切换成<code>Legacy build system</code>。</h4>
-<figure data-type="image" tabindex="1"><img src="https://blog.luyu.icu/post-images/1613494079991.png" alt="" loading="lazy"></figure>
-<h4 id="其次是根据出错信息在新创建系统模式下去除多余的引用重建">其次是根据出错信息，在新创建系统模式下，去除多余的引用重建。</h4>
-<h5 id="1-infoplist-2">1. Info.plist</h5>
-<p>在 <code>target</code> -&gt; <code>Build phase</code> &gt; <code>Copy Bundle Resource</code> 中找到<code>info.plist</code>，移除</p>
-<figure data-type="image" tabindex="2"><img src="https://blog.luyu.icu/post-images/1613494034862.png" alt="" loading="lazy"></figure>
-<h5 id="2-copy-pods-resources-2">2. Copy Pods Resources</h5>
-<p>在 <code>target</code> -&gt; <code>Build phase</code> -&gt; <code>Copy Pods Resources</code> -&gt; <code>Output Files</code>，移除<code>${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}</code></p>
-<figure data-type="image" tabindex="3"><img src="https://blog.luyu.icu/post-images/1613494090242.png" alt="" loading="lazy"></figure>
 ]]></content>
     </entry>
 </feed>
